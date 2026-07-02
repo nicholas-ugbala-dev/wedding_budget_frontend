@@ -1,5 +1,5 @@
 export const ME_KEY = 'me'
-export const CEREMONIES_KEY = 'ceremonies'
+export const EVENTS_KEY = 'events'
 export const CURRENCIES_KEY = 'currencies'
 export const VENDORS_KEY = 'vendors'
 export const CATEGORIES_KEY = 'categories'

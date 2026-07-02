@@ -32,7 +32,7 @@ export interface DashboardData {
         expense_id: string;
         name: string;
         vendor_name: string | null;
-        ceremony_name: string | null;
+        event_name: string | null;
         badge: NeedsAttentionBadge;
     }[];
 }

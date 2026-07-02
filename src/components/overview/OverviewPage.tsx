@@ -1,13 +1,13 @@
 import { useState } from 'react'
 import { useGetDashboard } from '@/store/queries/useDashboard'
-import { useGetCeremonies } from '@/store/queries/useCeremonies'
+import { useGetEvents } from '@/store/queries/useEvents'
 import { useGetMe } from '@/store/queries/useAuth'
 import { fCurrency } from '@/lib/format'
 import { SpendingChart } from './SpendingChart'
 import { DonutChart } from './DonutChart'
 import { PaymentProgress } from './PaymentProgress'
 import { NeedsAttention } from './NeedsAttention'
-import type { Ceremony } from '@/types/ceremony'
+import type { Event } from '@/types/event'
 
 const KPI_CONFIG = [
   { key: 'total_budget',     label: 'Total budget',     color: '#1C1B18', note: 'Original estimate' },
@@ -19,7 +19,7 @@ const KPI_CONFIG = [
 export function OverviewPage() {
   const [selectedId, setSelectedId] = useState<string | undefined>()
   const { data: user } = useGetMe()
-  const { data: ceremonies = [] } = useGetCeremonies()
+  const { data: events = [] } = useGetEvents()
   const { data, isLoading } = useGetDashboard(selectedId)
 
   const currency = user?.base_currency ?? 'NGN'
@@ -43,7 +43,7 @@ export function OverviewPage() {
           >
             All
           </button>
-          {(ceremonies as Ceremony[]).map(c => (
+          {(events as Event[]).map(c => (
             <button
               key={c.id}
               type="button"

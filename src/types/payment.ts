@@ -27,8 +27,8 @@ export interface PaymentListItem {
   id: string
   expense_id: string
   expense_name: string
-  ceremony_id: string
-  ceremony_name: string
+  event_id: string
+  event_name: string
   vendor_name: string | null
   payment_type: PaymentType
   wallet_currency_code: string

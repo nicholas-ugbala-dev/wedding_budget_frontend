@@ -1,4 +1,4 @@
-export interface Ceremony {
+export interface Event {
   id: string
   name: string
   user_id: string

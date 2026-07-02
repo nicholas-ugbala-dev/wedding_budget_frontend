@@ -20,8 +20,8 @@ export const getMeRequest = () =>
 export const onboard1Request = (data: Onboard1Input) => 
     instance.patch(api.AUTH_ONBOARDING, data).then(r => r.data.data);
 
-export const onboardCeremRequest = (data: { ceremony_names: string[] }) =>
-    instance.post(api.AUTH_ONBOARDING_CERS, { ceremonies: data.ceremony_names }).then(r => r.data.data);
+export const onboardEventsRequest = (data: { event_names: string[] }) =>
+    instance.post(api.AUTH_ONBOARDING_EVENTS, { events: data.event_names }).then(r => r.data.data);
 
 export const onboardCurrRequest = (data: { currency_codes: string[] }) =>
     instance.post(api.AUTH_ONBOARDING_CURS, { currencies: data.currency_codes }).then(r => r.data.data);

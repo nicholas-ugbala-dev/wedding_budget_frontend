@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { IconX } from '@tabler/icons-react'
-import { useGetCeremonies } from '@/store/queries/useCeremonies'
+import { useGetEvents } from '@/store/queries/useEvents'
 import { useGetMe } from '@/store/queries/useAuth'
 import { useCreateExpense } from '@/store/mutations/useExpenses'
 import { useUpdateExpense } from '@/store/mutations/useExpenses'
@@ -10,7 +10,7 @@ import { AppSelect } from '@/components/ui/AppSelect'
 import type { CategoryValue } from './CategoryCombobox'
 import type { CreateExpenseInput } from '@/validations/expense'
 import type { Expense } from '@/types/expense'
-import type { Ceremony } from '@/types/ceremony'
+import type { Event } from '@/types/event'
 
 interface Props {
   expense?: Expense
@@ -19,7 +19,7 @@ interface Props {
 
 type FormData = {
   name: string
-  ceremony_id: string
+  event_id: string
   vendor_name: string
   vendor_phone: string
   vendor_email: string
@@ -52,7 +52,7 @@ const inputStyle: React.CSSProperties = {
 
 export function ExpensePanel({ expense, onClose }: Props) {
   const { data: user }         = useGetMe()
-  const { data: ceremonies = [] } = useGetCeremonies()
+  const { data: events = [] } = useGetEvents()
   const createExpense          = useCreateExpense()
   const updateExpense          = useUpdateExpense()
 
@@ -68,7 +68,7 @@ export function ExpensePanel({ expense, onClose }: Props) {
   const { register, handleSubmit, reset, control } = useForm<FormData>({
     defaultValues: expense ? {
       name:             expense.name,
-      ceremony_id:      expense.ceremony_id,
+      event_id:      expense.event_id,
       vendor_name:      expense.vendor_name ?? '',
       vendor_phone:     '',
       vendor_email:     '',
@@ -81,7 +81,7 @@ export function ExpensePanel({ expense, onClose }: Props) {
   useEffect(() => {
     if (expense) reset({
       name:             expense.name,
-      ceremony_id:      expense.ceremony_id,
+      event_id:      expense.event_id,
       vendor_name:      expense.vendor_name ?? '',
       vendor_phone:     '',
       vendor_email:     '',
@@ -95,7 +95,7 @@ export function ExpensePanel({ expense, onClose }: Props) {
     const hasAmount = !!data.actual_amount && Number(data.actual_amount) > 0
     const base = {
       name:             data.name,
-      ceremony_id:      data.ceremony_id,
+      event_id:      data.event_id,
       vendor_name:      data.vendor_name  || undefined,
       vendor_phone:     data.vendor_phone || undefined,
       vendor_email:     data.vendor_email || undefined,
@@ -179,20 +179,20 @@ export function ExpensePanel({ expense, onClose }: Props) {
           <input {...register('name', { required: true })} placeholder="e.g. Photographer" style={inputStyle} />
         </div>
 
-        {/* Ceremony + Category */}
+        {/* Event + Category */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-            <label style={labelStyle}>Ceremony</label>
+            <label style={labelStyle}>Event</label>
             <Controller
               control={control}
-              name="ceremony_id"
+              name="event_id"
               rules={{ required: true }}
               render={({ field }) => (
                 <AppSelect
                   value={field.value ?? ''}
                   onChange={field.onChange}
                   placeholder="Select…"
-                  options={(ceremonies as Ceremony[]).map(c => ({ value: c.id, label: c.name }))}
+                  options={(events as Event[]).map(e => ({ value: e.id, label: e.name }))}
                 />
               )}
             />

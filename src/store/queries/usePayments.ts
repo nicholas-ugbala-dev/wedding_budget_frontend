@@ -20,10 +20,10 @@ export const useGetPayments = (params: Record<string, unknown>) =>
         queryFn: () => fetchPayments(params),
     });
 
-export const useGetPaymentSummary = (ceremonyId?: string) =>
+export const useGetPaymentSummary = (eventId?: string) =>
     useQuery<PaymentSummary>({
-        queryKey: [PAYMENT_SUMMARY_KEY, ceremonyId],
-        queryFn: () => fetchPaymentSummary(ceremonyId ? { ceremony_id: ceremonyId } : undefined),
+        queryKey: [PAYMENT_SUMMARY_KEY, eventId],
+        queryFn: () => fetchPaymentSummary(eventId ? { event_id: eventId } : undefined),
     });
 
 export const useGetPaymentTypes = () =>

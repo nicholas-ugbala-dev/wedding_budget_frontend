@@ -3,7 +3,7 @@ import { z } from 'zod';
 
 export const createExpenseSchema = z.object({
   name:             z.string().min(1, 'Expense name is required'),
-  ceremony_id:      z.uuid(),
+  event_id:         z.uuid(),
   category_id:      z.uuid().optional(),
   category_name:    z.string().optional(),
   vendor_id:        z.uuid().optional(),

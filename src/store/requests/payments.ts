@@ -5,7 +5,7 @@ import type { CreatePaymentInput, UpdatePaymentInput } from '@/validations/payme
 export const fetchPayments = (params: Record<string, unknown>) =>
     instance.get(api.PAYMENTS, { params }).then(r => r.data.data);
 
-export const fetchPaymentSummary = (params?: { ceremony_id?: string }) => 
+export const fetchPaymentSummary = (params?: { event_id?: string }) =>
     instance.get(api.PAYMENT_SUMMARY, { params }).then(r => r.data.data);
 
 export const fetchPaymentTypes = () => 

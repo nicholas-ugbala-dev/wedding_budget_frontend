@@ -1,14 +1,14 @@
 import { useState } from 'react'
 import { IconUser, IconCalendarEvent, IconWallet } from '@tabler/icons-react'
 import { AccountTab } from './AccountTab'
-import { CeremoniesTab } from './CeremoniesTab'
+import { EventsTab } from './EventsTab'
 import { CurrenciesTab } from './CurrenciesTab'
 
-type Tab = 'account' | 'ceremonies' | 'currencies'
+type Tab = 'account' | 'events' | 'currencies'
 
 const TABS = [
-  { id: 'account' as Tab,    label: 'Account',    Icon: IconUser },
-  { id: 'ceremonies' as Tab, label: 'Ceremonies', Icon: IconCalendarEvent },
+  { id: 'account' as Tab,  label: 'Account',    Icon: IconUser },
+  { id: 'events' as Tab,   label: 'Events',     Icon: IconCalendarEvent },
   { id: 'currencies' as Tab, label: 'Currencies', Icon: IconWallet },
 ]
 
@@ -53,7 +53,7 @@ export function SettingsPage() {
         {/* Right content card */}
         <div className="flex-1 bg-surface border border-border rounded-[10px]" style={{ padding: '24px 28px' }}>
           {tab === 'account'    && <AccountTab />}
-          {tab === 'ceremonies' && <CeremoniesTab />}
+          {tab === 'events'     && <EventsTab />}
           {tab === 'currencies' && <CurrenciesTab />}
         </div>
 

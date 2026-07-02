@@ -4,13 +4,13 @@ export const AUTH_LOGIN           = `${BASE}/auth/login`
 export const AUTH_REGISTER        = `${BASE}/auth/register`
 export const AUTH_ME              = `${BASE}/auth/me`
 export const AUTH_ONBOARDING      = `${BASE}/auth/onboarding`
-export const AUTH_ONBOARDING_CERS = `${BASE}/auth/onboarding/ceremonies`
+export const AUTH_ONBOARDING_EVENTS = `${BASE}/auth/onboarding/events`
 export const AUTH_ONBOARDING_CURS = `${BASE}/auth/onboarding/currencies`
 export const AUTH_FORGOT          = `${BASE}/auth/forgot-password`
 export const AUTH_RESET           = `${BASE}/auth/reset-password`
 
-export const CEREMONIES           = `${BASE}/ceremonies`
-export const CEREMONY_BY_ID       = (id: string) => `${BASE}/ceremonies/${id}`
+export const EVENTS               = `${BASE}/events`
+export const EVENT_BY_ID          = (id: string) => `${BASE}/events/${id}`
 
 export const CURRENCIES           = `${BASE}/currencies`
 export const CURRENCY_BY_CODE     = (code: string) => `${BASE}/currencies/${code}`
