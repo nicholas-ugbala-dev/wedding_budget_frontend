@@ -25,7 +25,7 @@ export function OverviewPage() {
   const currency = user?.base_currency ?? 'NGN'
 
   return (
-    <div className="p-8 max-w-[1100px]">
+    <div className="p-8">
 
       {/* Header */}
       <div className="flex items-center justify-between mb-7">
