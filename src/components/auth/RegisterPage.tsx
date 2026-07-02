@@ -29,7 +29,7 @@ export function RegisterPage() {
             <span className="text-white text-[17px] font-semibold tracking-[-0.5px]">M</span>
           </div>
           <div className="text-[22px] font-semibold text-text-primary tracking-[-0.3px]">Create account</div>
-          <div className="text-[13px] text-text-secondary mt-0.5">Start tracking your ceremony budget</div>
+          <div className="text-[13px] text-text-secondary mt-0.5">Start tracking your wedding budget</div>
         </div>
 
         {/* Card */}

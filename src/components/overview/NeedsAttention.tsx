@@ -4,7 +4,7 @@ import type { NeedsAttentionBadge } from '@/types/dashboard'
 
 interface AttentionItem {
   expense_id: string; name: string
-  vendor_name: string | null; ceremony_name: string | null
+  vendor_name: string | null; event_name: string | null
   badge: NeedsAttentionBadge
 }
 interface Props { data: AttentionItem[] }
@@ -50,9 +50,9 @@ export function NeedsAttention({ data }: Props) {
                  <div className="flex flex-col gap-0.5 min-w-0">
                   <span className="text-[12px] font-medium text-text-primary truncate">{item.name}</span>
                   <div className="flex items-center gap-1.5">
-                    {item.ceremony_name && (
+                    {item.event_name && (
                       <span className="text-[11px] text-text-muted px-2 py-0.5 rounded-full">
-                        {item.ceremony_name}
+                        {item.event_name}
                       </span>
                     )}
                     <span 

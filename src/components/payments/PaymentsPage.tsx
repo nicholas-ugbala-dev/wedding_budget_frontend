@@ -1,14 +1,14 @@
 import { useNavigate } from '@tanstack/react-router'
 import { useGetPayments } from '@/store/queries/usePayments'
 import { useGetPaymentSummary } from '@/store/queries/usePayments'
-import { useGetCeremonies } from '@/store/queries/useCeremonies'
+import { useGetEvents } from '@/store/queries/useEvents'
 import { useGetMe } from '@/store/queries/useAuth'
 import { useReducerSpread } from '@/hooks/useReducerSpread'
 import { fCurrency, fCurrencyFull, fDate } from '@/lib/format'
 import { cerStyle } from '@/lib/utils'
 import { Pagination } from '@/components/ui/Pagination'
 import type { PaymentListItem } from '@/types/payment'
-import type { Ceremony } from '@/types/ceremony'
+import type { Event } from '@/types/event'
 
 const PAYMENT_TYPE_LABEL: Record<string, string> = {
   deposit:      'Deposit',
@@ -25,11 +25,11 @@ const PAYMENT_TYPE_STYLE: Record<string, { bg: string; color: string }> = {
 export function PaymentsPage() {
   const navigate = useNavigate()
   const { data: user }        = useGetMe()
-  const { data: ceremonies = [] } = useGetCeremonies()
+  const { data: events = [] } = useGetEvents()
   const currency = user?.base_currency ?? 'NGN'
 
-  const cerIndexMap = Object.fromEntries(
-    (ceremonies as Ceremony[]).map((c, i) => [c.id, i])
+  const evIndexMap = Object.fromEntries(
+    (events as Event[]).map((e, i) => [e.id, i])
   )
 
   const [filters, setFilters] = useReducerSpread({ page: 1, limit: 10 })
@@ -46,7 +46,7 @@ export function PaymentsPage() {
       {/* Header */}
       <div>
         <div style={{ fontSize: 20, fontWeight: 600, color: '#1C1B18', letterSpacing: '-0.3px' }}>Payments</div>
-        <div style={{ fontSize: 13, color: '#595650', marginTop: 2 }}>All recorded payments across your event</div>
+        <div style={{ fontSize: 13, color: '#595650', marginTop: 2 }}>All recorded payments across your events</div>
       </div>
 
       {/* KPI cards */}
@@ -86,7 +86,7 @@ export function PaymentsPage() {
           items.map((pay: PaymentListItem) => {
             const pt      = PAYMENT_TYPE_STYLE[pay.payment_type] ?? PAYMENT_TYPE_STYLE.deposit
             const ptLabel = PAYMENT_TYPE_LABEL[pay.payment_type] ?? pay.payment_type
-            const cerIdx  = cerIndexMap[pay.ceremony_id] ?? 0
+            const cerIdx  = evIndexMap[pay.event_id] ?? 0
             const cer     = cerStyle(cerIdx)
             const isForeign = pay.wallet_currency_code !== currency
             const rateInfo = isForeign && pay.exchange_rate
@@ -113,7 +113,7 @@ export function PaymentsPage() {
                       className="inline-flex items-center rounded-full font-medium"
                       style={{ padding: '1px 7px', fontSize: 10, background: cer.bg, color: cer.color, border: `1px solid ${cer.border}` }}
                     >
-                      {pay.ceremony_name}
+                      {pay.event_name}
                     </span>
                     <span
                       className="inline-flex items-center rounded-full font-medium"

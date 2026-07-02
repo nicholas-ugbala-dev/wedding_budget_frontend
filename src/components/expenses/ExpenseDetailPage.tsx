@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { IconArrowLeft, IconPlus } from '@tabler/icons-react'
 import { useGetExpenseById } from '@/store/queries/useExpenses'
-import { useGetCeremonies } from '@/store/queries/useCeremonies'
+import { useGetEvents } from '@/store/queries/useEvents'
 import { useGetMe } from '@/store/queries/useAuth'
 import { useDeletePayment } from '@/store/mutations/usePayments'
 import { fCurrencyFull, pct } from '@/lib/format'
@@ -12,7 +12,7 @@ import { ExpensePanel } from './ExpensePanel'
 import { PaymentPanel } from './PaymentPanel'
 import { PaymentCard } from './PaymentCard'
 import type { Payment } from '@/types/payment'
-import type { Ceremony } from '@/types/ceremony'
+import type { Event } from '@/types/event'
 
 interface Props { expenseId: string }
 
@@ -22,7 +22,7 @@ export function ExpenseDetailPage({ expenseId }: Props) {
   const [editPayment, setEditPayment]   = useState<Payment | null>(null)
   const navigate              = useNavigate()
   const { data: user }        = useGetMe()
-  const { data: ceremonies = [] } = useGetCeremonies()
+  const { data: events = [] } = useGetEvents()
   const { data: expense, isLoading } = useGetExpenseById(expenseId)
   const deletePayment         = useDeletePayment()
 
@@ -39,7 +39,7 @@ export function ExpenseDetailPage({ expenseId }: Props) {
   const barColor = progressColor(paidPct)
   const status   = noAmount ? PENDING_STYLE : statusStyle(expense.status)
 
-  const cerIdx = (ceremonies as Ceremony[]).findIndex(c => c.id === expense.ceremony_id)
+  const cerIdx = (events as Event[]).findIndex(e => e.id === expense.event_id)
   const cer    = cerStyle(cerIdx >= 0 ? cerIdx : 0)
 
   return (
@@ -73,7 +73,7 @@ export function ExpenseDetailPage({ expenseId }: Props) {
                 className="inline-flex items-center rounded-full font-medium"
                 style={{ padding: '2px 9px', fontSize: 11, background: cer.bg, color: cer.color, border: `1px solid ${cer.border}` }}
               >
-                {expense.ceremony_name}
+                {expense.event_name}
               </span>
               <span style={{ fontSize: 12, color: '#9B9890' }}>{expense.category_name}</span>
               <span

@@ -13,7 +13,7 @@ export const CURRENCY_OPTIONS = [
   { code: 'AED', name: 'UAE Dirham' },
 ]
 
-export const CEREMONY_PRESETS = [
+export const EVENT_PRESETS = [
   'Traditional',
   'Church Service',
   'White Wedding',

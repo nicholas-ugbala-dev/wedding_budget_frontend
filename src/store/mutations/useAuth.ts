@@ -6,7 +6,7 @@ import {
     loginRequest,
     registerRequest,
     onboard1Request,
-    onboardCeremRequest,
+    onboardEventsRequest,
     onboardCurrRequest,
     forgotRequest,
     resetRequest,
@@ -45,9 +45,9 @@ export const useOnboard1 = () =>
             toast.error(err.response?.data?.message ?? "Something went wrong"),
     });
 
-export const useOnboardCeremonies = () =>
+export const useOnboardEvents = () =>
   useMutation({
-    mutationFn: onboardCeremRequest,
+    mutationFn: onboardEventsRequest,
     onError: (err: ApiError) => toast.error(err.response?.data?.message ?? 'Something went wrong'),
   });
 

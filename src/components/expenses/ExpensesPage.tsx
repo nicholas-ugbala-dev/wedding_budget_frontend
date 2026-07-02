@@ -3,7 +3,7 @@ import { useNavigate } from '@tanstack/react-router'
 import { IconSearch, IconPlus } from '@tabler/icons-react'
 import { AppSelect } from '@/components/ui/AppSelect'
 import { useGetExpenses } from '@/store/queries/useExpenses'
-import { useGetCeremonies } from '@/store/queries/useCeremonies'
+import { useGetEvents } from '@/store/queries/useEvents'
 import { useGetMe } from '@/store/queries/useAuth'
 import { useReducerSpread } from '@/hooks/useReducerSpread'
 import { fCurrency } from '@/lib/format'
@@ -12,7 +12,7 @@ import { Pagination } from '@/components/ui/Pagination'
 import { SlidePanel } from '@/components/layout/SlidePanel'
 import { ExpensePanel } from './ExpensePanel'
 import type { Expense } from '@/types/expense'
-import type { Ceremony } from '@/types/ceremony'
+import type { Event } from '@/types/event'
 
 const STATUS_OPTIONS = [
   { value: '',        label: 'All statuses' },
@@ -25,19 +25,19 @@ export function ExpensesPage() {
   const navigate = useNavigate()
   const [addOpen, setAddOpen] = useState(false)
   const { data: user } = useGetMe()
-  const { data: ceremonies = [] } = useGetCeremonies()
+  const { data: events = [] } = useGetEvents()
   const currency = user?.base_currency ?? 'NGN'
 
   // Stable color index per ceremony
-  const cerIndexMap = Object.fromEntries(
-    (ceremonies as Ceremony[]).map((c, i) => [c.id, i])
+  const evIndexMap = Object.fromEntries(
+    (events as Event[]).map((e, i) => [e.id, i])
   )
 
   // Separate local input state from committed filter state
   const [searchInput, setSearchInput] = useState('')
   const [filters, setFilters] = useReducerSpread({
     search:      '',
-    ceremony_id: '',
+    event_id: '',
     status:      '',
     page:        1,
     limit:       10,
@@ -67,9 +67,9 @@ export function ExpensesPage() {
               <span style={{ fontSize: 13, color: '#595650' }}>
                 {pg.total} {pg.total === 1 ? 'expense' : 'expenses'}
               </span>
-              {filters.ceremony_id && (() => {
+              {filters.event_id && (() => {
                 
-                const name = (ceremonies as Ceremony[]).find(c => c.id === filters.ceremony_id)?.name
+                const name = (events as Event[]).find(c => c.id === filters.event_id)?.name
                 return name ? (
                   <>
                     <span style={{ fontSize: 13, color: '#C0BEB8' }}>·</span>
@@ -110,12 +110,12 @@ export function ExpensesPage() {
         {/* Ceremony filter */}
         <div style={{ width: 140, flexShrink: 0 }}>
           <AppSelect
-            value={filters.ceremony_id}
-            onChange={v => setFilters({ ceremony_id: v, page: 1 })}
-            placeholder="All ceremonies"
+            value={filters.event_id}
+            onChange={v => setFilters({ event_id: v, page: 1 })}
+            placeholder="All events"
             options={[
-              { value: '', label: 'All ceremonies' },
-              ...(ceremonies as Ceremony[]).map(c => ({ value: c.id, label: c.name })),
+              { value: '', label: 'All events' },
+              ...(events as Event[]).map(c => ({ value: c.id, label: c.name })),
             ]}
             style={{ height: 32, borderRadius: 6, fontSize: 13 }}
           />
@@ -155,7 +155,7 @@ export function ExpensesPage() {
           items.map((item: Expense) => {
             const noAmount = !item.actual_amount || Number(item.actual_amount) === 0
             const status   = noAmount ? PENDING_STYLE : statusStyle(item.status)
-            const cer      = cerStyle(cerIndexMap[item.ceremony_id] ?? 0)
+            const cer      = cerStyle(evIndexMap[item.event_id] ?? 0)
             const balance  = Number(item.balance)
 
             return (
@@ -172,7 +172,7 @@ export function ExpensesPage() {
                     className="text-[10px] font-medium self-start px-2 py-0.5 rounded-full"
                     style={{ background: cer.bg, color: cer.color, border: `1px solid ${cer.border}` }}
                   >
-                    {item.ceremony_name}
+                    {item.event_name}
                   </span>
                 </div>
 
