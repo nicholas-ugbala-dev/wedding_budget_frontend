@@ -1,4 +1,5 @@
-import { forwardRef, type InputHTMLAttributes } from 'react'
+import { forwardRef, useState, type InputHTMLAttributes } from 'react'
+import { IconEye, IconEyeOff } from '@tabler/icons-react'
 
 interface FieldProps extends InputHTMLAttributes<HTMLInputElement> {
   label: string
@@ -6,17 +7,35 @@ interface FieldProps extends InputHTMLAttributes<HTMLInputElement> {
 }
 
 export const Field = forwardRef<HTMLInputElement, FieldProps>(
-  ({ label, error, ...props }, ref) => {
+  ({ label, error, type, ...props }, ref) => {
+    const [showPassword, setShowPassword] = useState(false)
+    const isPassword = type === 'password'
+    const inputType = isPassword ? (showPassword ? 'text' : 'password') : type
+
     return (
       <div className="flex flex-col gap-1.5">
         <label className="text-[11px] font-medium text-text-secondary uppercase tracking-[0.05em]">
           {label}
         </label>
-        <input
-          ref={ref}
-          {...props}
-          className="h-[38px] border border-border rounded-[7px] px-3 text-[13px] bg-panel text-text-primary w-full placeholder:text-text-faint"
-        />
+        <div className="relative">
+          <input
+            ref={ref}
+            type={inputType}
+            {...props}
+            className="h-[38px] border border-border rounded-[7px] px-3 text-[13px] bg-panel text-text-primary w-full placeholder:text-text-faint"
+            style={isPassword ? { paddingRight: 36 } : undefined}
+          />
+          {isPassword && (
+            <button
+              type="button"
+              onClick={() => setShowPassword(v => !v)}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-secondary"
+              tabIndex={-1}
+            >
+              {showPassword ? <IconEyeOff size={15} /> : <IconEye size={15} />}
+            </button>
+          )}
+        </div>
         {error && <span className="text-[11px] text-outstanding">{error}</span>}
       </div>
     )
