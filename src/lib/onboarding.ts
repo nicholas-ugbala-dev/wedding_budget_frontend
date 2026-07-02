@@ -1,0 +1,30 @@
+export const CURRENCY_OPTIONS = [
+  { code: 'NGN', name: 'Nigerian Naira' },
+  { code: 'USD', name: 'US Dollar' },
+  { code: 'GBP', name: 'British Pound' },
+  { code: 'EUR', name: 'Euro' },
+  { code: 'GHS', name: 'Ghanaian Cedi' },
+  { code: 'KES', name: 'Kenyan Shilling' },
+  { code: 'ZAR', name: 'South African Rand' },
+  { code: 'UGX', name: 'Ugandan Shilling' },
+  { code: 'TZS', name: 'Tanzanian Shilling' },
+  { code: 'CAD', name: 'Canadian Dollar' },
+  { code: 'AUD', name: 'Australian Dollar' },
+  { code: 'AED', name: 'UAE Dirham' },
+]
+
+export const CEREMONY_PRESETS = [
+  'Traditional',
+  'Church Service',
+  'White Wedding',
+  'Nikah',
+  'Registry',
+  'Reception',
+  'Engagement',
+  'Henna Night',
+  'Bridal Shower',
+  'Birthday',
+  'Anniversary',
+  'Baby Shower',
+  'Burial',
+]

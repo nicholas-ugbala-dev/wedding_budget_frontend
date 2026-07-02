@@ -1,0 +1,11 @@
+export const ME_KEY = 'me'
+export const CEREMONIES_KEY = 'ceremonies'
+export const CURRENCIES_KEY = 'currencies'
+export const VENDORS_KEY = 'vendors'
+export const CATEGORIES_KEY = 'categories'
+export const EXPENSES_KEY = 'expenses'
+export const EXPENSE_DETAIL_KEY = (id: string) => `expense-${id}`
+export const PAYMENTS_KEY = 'payments'
+export const PAYMENT_SUMMARY_KEY = 'payment-summary'
+export const PAYMENT_TYPES_KEY = 'payment-types'
+export const DASHBOARD_KEY = 'dashboard'
