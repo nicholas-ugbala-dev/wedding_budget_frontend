@@ -5,17 +5,13 @@ import {
   IconLayoutDashboard,
   IconList,
   IconReceipt,
+  IconCalendarEvent,
+  IconUsers,
   IconPlus,
   IconSettings,
   IconLogout,
 } from '@tabler/icons-react'
 import { useGetMe } from '@/store/queries/useAuth'
-
-const NAV = [
-  { to: '/overview',  icon: IconLayoutDashboard, label: 'Overview' },
-  { to: '/expenses',  icon: IconList,             label: 'Expenses' },
-  { to: '/payments',  icon: IconReceipt,          label: 'Payments' },
-] as const
 
 // Portal tooltip that appears to the right of the hovered element
 function Tip({ label, children, show }: { label: string; children: ReactNode; show: boolean }) {
@@ -63,6 +59,21 @@ function Tip({ label, children, show }: { label: string; children: ReactNode; sh
   )
 }
 
+const NAV_PERSONAL = [
+  { to: '/overview',  icon: IconLayoutDashboard, label: 'Overview' },
+  { to: '/expenses',  icon: IconList,             label: 'All expenses' },
+  { to: '/payments',  icon: IconReceipt,          label: 'Payments' },
+  { to: '/events',    icon: IconCalendarEvent,    label: 'Events' },
+] as const
+
+const NAV_PLANNER = [
+  { to: '/clients',   icon: IconUsers,            label: 'Clients' },
+  { to: '/overview',  icon: IconLayoutDashboard,  label: 'Overview' },
+  { to: '/expenses',  icon: IconList,             label: 'All expenses' },
+  { to: '/payments',  icon: IconReceipt,          label: 'Payments' },
+  { to: '/events',    icon: IconCalendarEvent,    label: 'Events' },
+] as const
+
 interface SidebarProps {
   onAddExpense: () => void
 }
@@ -73,6 +84,9 @@ export function Sidebar({ onAddExpense }: SidebarProps) {
   const navigate = useNavigate()
   const { location } = useRouterState()
   const { data: user } = useGetMe()
+
+  const isPlanner = user?.account_type === 'planner'
+  const NAV = isPlanner ? NAV_PLANNER : NAV_PERSONAL
 
   const initials = user
     ? `${user.first_name[0]}${user.last_name[0]}`.toUpperCase()
@@ -205,7 +219,6 @@ export function Sidebar({ onAddExpense }: SidebarProps) {
             className="flex flex-col w-full"
             style={{ borderTop: '1px solid #DDD9D3', paddingTop: 10, marginTop: 2, gap: 8 }}
           >
-            {/* Avatar row — click collapses */}
             <button
               type="button"
               onClick={() => setExpanded(false)}
@@ -218,9 +231,14 @@ export function Sidebar({ onAddExpense }: SidebarProps) {
               >
                 {initials}
               </div>
-              <span style={{ fontSize: 13, fontWeight: 500, color: '#1C1B18', whiteSpace: 'nowrap' }}>
-                {user?.first_name ?? ''}
-              </span>
+              <div className="min-w-0">
+                <span style={{ fontSize: 13, fontWeight: 500, color: '#1C1B18', whiteSpace: 'nowrap' }}>
+                  {user?.first_name ?? ''}
+                </span>
+                {isPlanner && (
+                  <div style={{ fontSize: 10, color: '#9B9890', whiteSpace: 'nowrap' }}>Planner</div>
+                )}
+              </div>
             </button>
 
             <button
