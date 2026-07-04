@@ -2,7 +2,9 @@ import { useState } from 'react'
 import { IconCircleCheckFilled, IconCheck, IconTrash } from '@tabler/icons-react'
 import { useGetEvents } from '@/store/queries/useEvents'
 import { useGetMe } from '@/store/queries/useAuth'
+import { useBaseCurrency } from '@/store/queries/useBaseCurrency'
 import { useCreateEvent, useUpdateEvent, useDeleteEvent } from '@/store/mutations/useEvents'
+import { useClientStore } from '@/store/useClientStore'
 import { CURRENCY_OPTIONS, EVENT_PRESETS } from '@/lib/onboarding'
 import { fCurrency } from '@/lib/format'
 import type { Event } from '@/types/event'
@@ -65,8 +67,9 @@ export function EventsPage() {
   const { mutate: updateEvent, isPending: updating } = useUpdateEvent()
   const { mutate: deleteEvent } = useDeleteEvent()
 
-  const baseCurrency = user?.base_currency ?? 'NGN'
+  const baseCurrency = useBaseCurrency()
   const isPlanner = user?.account_type === 'planner'
+  const { activeClient } = useClientStore()
 
   // local card state — synced from server, extended with UI state
   const [cards, setCards] = useState<EventCard[]>([])
@@ -93,6 +96,7 @@ export function EventsPage() {
       location: card.draftLocation || undefined,
       vendor_currency: card.draftVendorCurrency || undefined,
       budget: card.draftBudget ? parseInt(card.draftBudget, 10) : undefined,
+      ...(isPlanner && activeClient ? { client_id: activeClient.id } : {}),
     }
     if (Number(card.id) < 0) {
       // new event
@@ -123,9 +127,11 @@ export function EventsPage() {
   const addNew = () =>
     setCards(prev => [...prev.map(c => ({ ...c, isOpen: false })), newCard()])
 
-  const subtitle = isPlanner
-    ? 'Events across all your clients'
-    : 'Your events and their budgets'
+  const subtitle = isPlanner && activeClient
+    ? `Managing events for ${activeClient.first_name}${activeClient.last_name ? ` ${activeClient.last_name}` : ''}`
+    : isPlanner
+      ? 'Select a client to manage their events'
+      : 'Your events and their budgets'
 
   const isPending = creating || updating
 
@@ -148,42 +154,59 @@ export function EventsPage() {
             cards.map(c => (
               <div key={c.id}>
                 {/* Saved / collapsed */}
-                {!c.isOpen && (
-                  <div
-                    className="bg-surface rounded-[10px] px-4 py-3 flex items-center justify-between gap-3"
-                    style={{ border: `1px solid ${c.name ? '#C8DDD4' : '#E8E6E0'}` }}
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <IconCircleCheckFilled size={18} color="#3A7A5A" className="shrink-0" />
-                      <div className="min-w-0">
-                        <div className="text-[13px] font-medium text-text-primary truncate">
-                          {[c.name, c.event_type].filter(Boolean).join(' · ')}
-                        </div>
-                        <div className="text-[11px] text-text-muted mt-[1px]">
-                          {c.budget != null
-                            ? fCurrency(c.budget, baseCurrency) + ' budget'
-                            : 'No budget set'}
+                {!c.isOpen && (() => {
+                  const isNew = Number(c.id) < 0
+                  const displayName = isNew ? c.draftName : c.name
+                  const displayType = isNew ? c.draftType : c.event_type
+                  const displayBudget = isNew
+                    ? (c.draftBudget ? fCurrency(parseInt(c.draftBudget, 10), baseCurrency) + ' budget' : 'No budget set')
+                    : (c.budget != null ? fCurrency(c.budget, baseCurrency) + ' budget' : 'No budget set')
+                  return (
+                    <div
+                      className="bg-surface rounded-[10px] px-4 py-3 flex items-center justify-between gap-3"
+                      style={{ border: `1px solid ${isNew ? '#D0CEC8' : '#C8DDD4'}` }}
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <IconCircleCheckFilled size={18} color={isNew ? '#C0BEB8' : '#3A7A5A'} className="shrink-0" />
+                        <div className="min-w-0">
+                          <div className="text-[13px] font-medium truncate" style={{ color: isNew && !displayName ? '#9B9890' : '#1C1B18' }}>
+                            {[displayName || (isNew ? 'New event' : ''), displayType].filter(Boolean).join(' · ')}
+                          </div>
+                          <div className="text-[11px] text-text-muted mt-[1px]">{displayBudget}</div>
                         </div>
                       </div>
+                      <div className="flex gap-1.5 shrink-0">
+                        {isNew ? (
+                          <button
+                            type="button"
+                            onClick={() => openCard(c.id)}
+                            className="h-7 px-3 border rounded-[6px] text-[11px] font-medium cursor-pointer"
+                            style={{ borderColor: '#B8D9C8', background: '#EEF5F1', color: '#2A5C41' }}
+                          >
+                            Save
+                          </button>
+                        ) : (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => openCard(c.id)}
+                              className="h-7 px-3 border border-border rounded-[6px] bg-surface text-[11px] text-text-secondary cursor-pointer hover:bg-panel"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => removeCard(c)}
+                              className="h-7 w-7 border border-border rounded-[6px] bg-surface text-text-muted cursor-pointer hover:bg-[#FDF0F0] hover:text-[#A83030] flex items-center justify-center"
+                            >
+                              <IconTrash size={13} />
+                            </button>
+                          </>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex gap-1.5 shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => openCard(c.id)}
-                        className="h-7 px-3 border border-border rounded-[6px] bg-surface text-[11px] text-text-secondary cursor-pointer hover:bg-panel"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => removeCard(c)}
-                        className="h-7 w-7 border border-border rounded-[6px] bg-surface text-text-muted cursor-pointer hover:bg-[#FDF0F0] hover:text-[#A83030] flex items-center justify-center"
-                      >
-                        <IconTrash size={13} />
-                      </button>
-                    </div>
-                  </div>
-                )}
+                  )
+                })()}
 
                 {/* Open / expanded */}
                 {c.isOpen && (
@@ -283,7 +306,7 @@ export function EventsPage() {
                         className="text-[12px] text-text-muted cursor-pointer hover:text-[#A83030] flex items-center gap-1.5"
                         style={{ background: 'none', border: 'none', padding: 0, fontFamily: 'inherit' }}
                       >
-                        <IconTrash size={13} /> Delete event
+                        <IconTrash size={13} /> {Number(c.id) < 0 ? 'Discard' : 'Delete event'}
                       </button>
                       <button
                         type="button"

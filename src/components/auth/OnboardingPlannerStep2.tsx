@@ -32,7 +32,7 @@ export function OnboardingPlannerStep2() {
       budget: budget ? parseInt(budget, 10) : undefined,
       client_id: selectedClientId || undefined,
     })
-    navigate({ to: '/overview' })
+    navigate({ to: '/clients' })
   }
 
   const clientCurrency = selectedClient?.currency_code ?? 'NGN'
@@ -180,7 +180,7 @@ export function OnboardingPlannerStep2() {
             disabled={isPending || !name.trim()}
             className="h-10 bg-text-primary text-white border-none rounded-[7px] text-[13px] font-medium w-full cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isPending ? 'Setting up…' : 'Go to overview →'}
+            {isPending ? 'Setting up…' : 'Go to clients →'}
           </button>
         </div>
       </div>

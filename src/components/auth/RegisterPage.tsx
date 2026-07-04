@@ -15,7 +15,9 @@ export function RegisterPage() {
 
   const onSubmit = (data: RegisterInput) => {
     register_(data, {
-      onSuccess: () => navigate({ to: '/onboarding/step-1' }),
+      onSuccess: (res) => navigate({
+        to: res.user?.account_type === 'planner' ? '/onboarding/planner-step-1' : '/onboarding/step-1',
+      }),
     })
   }
 
@@ -72,7 +74,7 @@ export function RegisterPage() {
             error={errors.account_type?.message}
             {...register('account_type')}
           >
-            <option value="couple">Couple — planning our own wedding</option>
+            <option value="couple">Personal — planning my own events</option>
             <option value="planner">Event planner — managing clients</option>
           </SelectField>
 

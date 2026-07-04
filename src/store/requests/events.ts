@@ -12,8 +12,8 @@ export type EventPayload = {
   client_id?: string
 }
 
-export const fetchEvents = (): Promise<Event[]> =>
-  instance.get(api.EVENTS).then(r => r.data.data)
+export const fetchEvents = (params?: { client_id?: string }): Promise<Event[]> =>
+  instance.get(api.EVENTS, { params }).then(r => r.data.data)
 
 export const createEvent = (data: EventPayload): Promise<Event> =>
   instance.post(api.EVENTS, data).then(r => r.data.data)

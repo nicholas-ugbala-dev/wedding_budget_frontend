@@ -1,11 +1,11 @@
 import { IconCheck, IconLock, IconPencil, IconTrash } from '@tabler/icons-react'
-import { fCurrencyFull, fDate } from '@/lib/format'
+import { fCurrencyFull, fDate, fRate } from '@/lib/format'
 import { CURRENCY_META } from '@/lib/format'
 import type { Payment } from '@/types/payment'
 
 const PAYMENT_TYPE: Record<string, { label: string; bg: string; color: string }> = {
-  deposit:      { label: 'Deposit',      bg: '#F0EEE9', color: '#595650' },
-  balance:      { label: 'Balance',      bg: '#FDF5E6', color: '#92600A' },
+  deposit:      { label: 'Deposit',      bg: '#FDF5E6', color: '#92600A' },
+  balance:      { label: 'Balance',      bg: '#F0EEE9', color: '#595650' },
   full_payment: { label: 'Full payment', bg: '#EEF5F1', color: '#2A5C41' },
 }
 
@@ -22,7 +22,7 @@ export function PaymentCard({ payment, currency, onEdit, onDelete }: Props) {
   const walletMeta = CURRENCY_META[payment.wallet_currency_code] ?? { name: payment.wallet_currency_code }
 
   const rateDisplay = isForeign && payment.exchange_rate
-    ? `1 ${payment.wallet_currency_code} = ${fCurrencyFull(payment.exchange_rate, currency)}`
+    ? `1 ${payment.wallet_currency_code} = ${fRate(payment.exchange_rate)} ${currency}`
     : null
 
   return (
@@ -134,7 +134,7 @@ export function PaymentCard({ payment, currency, onEdit, onDelete }: Props) {
             <span style={{ fontSize: 11, color: '#9B9890' }}>Rate locked to this payment</span>
             <div className="flex items-center gap-1" style={{ fontSize: 11, color: '#92600A', fontWeight: 500 }}>
               <IconLock size={12} />
-              {fCurrencyFull(payment.exchange_rate, currency)} · {fDate(payment.payment_date)}
+              {fRate(payment.exchange_rate)} · {fDate(payment.payment_date)}
             </div>
           </>
         ) : (

@@ -9,6 +9,7 @@ interface ClientPill {
   id: string
   first_name: string
   last_name: string
+  email: string
   currency_code: string
 }
 
@@ -19,22 +20,25 @@ export function OnboardingPlannerStep1() {
   const [pills, setPills] = useState<ClientPill[]>([])
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
+  const [email, setEmail] = useState('')
   const [currency, setCurrency] = useState('NGN')
   const [isPending, setIsPending] = useState(false)
 
   const addClient = () => {
-    if (!firstName.trim() || !lastName.trim()) {
-      toast.error('First and last name are required')
+    if (!firstName.trim()) {
+      toast.error('First name is required')
       return
     }
     setPills(prev => [...prev, {
       id: crypto.randomUUID(),
       first_name: firstName.trim(),
       last_name: lastName.trim(),
+      email: email.trim(),
       currency_code: currency,
     }])
     setFirstName('')
     setLastName('')
+    setEmail('')
     setCurrency('NGN')
   }
 
@@ -83,7 +87,7 @@ export function OnboardingPlannerStep1() {
                   style={{ background: '#EEF5F1', border: '1px solid #C8DDD4' }}
                 >
                   <span style={{ fontSize: 12, fontWeight: 500, color: '#2A5C41' }}>
-                    {p.first_name} {p.last_name}
+                    {p.first_name}{p.last_name ? ` ${p.last_name}` : ''}
                   </span>
                   <span style={{ fontSize: 10, fontWeight: 600, color: '#9B9890' }}>{p.currency_code}</span>
                   <IconX size={12} color="#9B9890" className="cursor-pointer" onClick={() => remove(p.id)} />
@@ -108,7 +112,7 @@ export function OnboardingPlannerStep1() {
             </div>
             <div className="flex flex-col gap-[5px]">
               <label className="text-[11px] font-medium text-text-secondary uppercase tracking-[0.05em]">
-                Last name <span className="text-[#C43C3C]">*</span>
+                Last name
               </label>
               <input
                 value={lastName}
@@ -121,8 +125,19 @@ export function OnboardingPlannerStep1() {
           </div>
 
           <div className="flex flex-col gap-[5px]">
+            <label className="text-[11px] font-medium text-text-secondary uppercase tracking-[0.05em]">Email</label>
+            <input
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              placeholder="email@example.com"
+              className="h-[38px] border border-border rounded-[7px] px-3 text-[13px] bg-panel text-text-primary outline-none focus:border-brand w-full"
+            />
+          </div>
+
+          <div className="flex flex-col gap-[5px]">
             <label className="text-[11px] font-medium text-text-secondary uppercase tracking-[0.05em]">
-              Client's base currency
+              Base currency
             </label>
             <select
               value={currency}
@@ -133,6 +148,7 @@ export function OnboardingPlannerStep1() {
                 <option key={opt.code} value={opt.code}>{opt.code} — {opt.name}</option>
               ))}
             </select>
+            <span className="text-[11px] text-text-muted">What currency does your client hold?</span>
           </div>
 
           <button

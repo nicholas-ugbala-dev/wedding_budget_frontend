@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
+import { useQueryClient } from '@tanstack/react-query'
 import {
   IconLayoutDashboard,
   IconList,
@@ -12,6 +13,7 @@ import {
   IconLogout,
 } from '@tabler/icons-react'
 import { useGetMe } from '@/store/queries/useAuth'
+import { useClientStore } from '@/store/useClientStore'
 
 // Portal tooltip that appears to the right of the hovered element
 function Tip({ label, children, show }: { label: string; children: ReactNode; show: boolean }) {
@@ -74,6 +76,10 @@ const NAV_PLANNER = [
   { to: '/events',    icon: IconCalendarEvent,    label: 'Events' },
 ] as const
 
+const NAV_PLANNER_NO_CLIENT = [
+  { to: '/clients',   icon: IconUsers,            label: 'Clients' },
+] as const
+
 interface SidebarProps {
   onAddExpense: () => void
 }
@@ -84,18 +90,28 @@ export function Sidebar({ onAddExpense }: SidebarProps) {
   const navigate = useNavigate()
   const { location } = useRouterState()
   const { data: user } = useGetMe()
+  const { activeClient, clearActiveClient } = useClientStore()
+  const qc = useQueryClient()
 
   const isPlanner = user?.account_type === 'planner'
-  const NAV = isPlanner ? NAV_PLANNER : NAV_PERSONAL
+  const NAV = isPlanner
+    ? (activeClient ? NAV_PLANNER : NAV_PLANNER_NO_CLIENT)
+    : NAV_PERSONAL
 
   const initials = user
     ? `${user.first_name[0]}${user.last_name[0]}`.toUpperCase()
     : '?'
 
+  const clientInitials = activeClient
+    ? `${activeClient.first_name[0]}${activeClient.last_name?.[0] ?? ''}`.toUpperCase()
+    : ''
+
   const isActive = (path: string) => location.pathname.startsWith(path)
 
   const logout = () => {
     localStorage.removeItem('auth_token')
+    clearActiveClient()
+    qc.clear()
     navigate({ to: '/login' })
   }
 
@@ -139,8 +155,52 @@ export function Sidebar({ onAddExpense }: SidebarProps) {
         )}
       </div>
 
+      {/* Active client switcher — planners only */}
+      {isPlanner && activeClient && (
+        <div style={{ padding: '0 9px', marginBottom: 4 }}>
+          <Tip
+            label={`Active: ${activeClient.first_name}${activeClient.last_name ? ` ${activeClient.last_name}` : ''} — click to switch`}
+            show={collapsed}
+          >
+            <button
+              type="button"
+              onClick={() => navigate({ to: '/clients' })}
+              className="flex items-center gap-2.5 cursor-pointer border-none w-full"
+              style={{ background: 'transparent', padding: 0, fontFamily: 'inherit' }}
+            >
+              <div
+                style={{
+                  width: 36, height: 36, borderRadius: '50%',
+                  border: '2px solid #3A7A5A',
+                  background: '#EEF5F1',
+                  fontSize: 11, fontWeight: 600, color: '#3A7A5A',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                {clientInitials}
+              </div>
+              {expanded && (
+                <div className="min-w-0 text-left">
+                  <div style={{ fontSize: 12, fontWeight: 500, color: '#1C1B18', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {activeClient.first_name}{activeClient.last_name ? ` ${activeClient.last_name}` : ''}
+                  </div>
+                  <div style={{ fontSize: 10, color: '#9B9890', whiteSpace: 'nowrap' }}>Active client</div>
+                </div>
+              )}
+            </button>
+          </Tip>
+          <div style={{ height: 1, background: '#DDD9D3', margin: '8px 0 4px' }} />
+        </div>
+      )}
+
       {/* Nav */}
       <nav className="flex flex-col gap-1 flex-1" style={{ padding: '0 9px' }}>
+        {isPlanner && !activeClient && expanded && (
+          <div style={{ fontSize: 11, color: '#C0BEB8', padding: '4px 10px 8px', lineHeight: 1.4 }}>
+            Select a client to continue
+          </div>
+        )}
         {NAV.map(({ to, icon: Icon, label }) => {
           const active = isActive(to)
           return (
@@ -171,27 +231,29 @@ export function Sidebar({ onAddExpense }: SidebarProps) {
 
       {/* Bottom actions */}
       <div className="flex flex-col items-center gap-2" style={{ padding: '0 9px' }}>
-        {/* Add expense */}
-        <Tip label="Add expense" show={collapsed}>
-          <button
-            type="button"
-            onClick={onAddExpense}
-            className="h-9 rounded-full bg-brand flex items-center border-none cursor-pointer shrink-0"
-            style={{
-              gap: 8,
-              padding: expanded ? '0 16px' : '0',
-              width: expanded ? 'fit-content' : 36,
-              justifyContent: 'center',
-            }}
-          >
-            <IconPlus size={18} color="white" />
-            {expanded && (
-              <span style={{ fontSize: 13, fontWeight: 500, color: 'white', whiteSpace: 'nowrap' }}>
-                Add expense
-              </span>
-            )}
-          </button>
-        </Tip>
+        {/* Add expense — hidden for planners without active client */}
+        {(!isPlanner || activeClient) && (
+          <Tip label="Add expense" show={collapsed}>
+            <button
+              type="button"
+              onClick={onAddExpense}
+              className="h-9 rounded-full bg-brand flex items-center border-none cursor-pointer shrink-0"
+              style={{
+                gap: 8,
+                padding: expanded ? '0 16px' : '0',
+                width: expanded ? 'fit-content' : 36,
+                justifyContent: 'center',
+              }}
+            >
+              <IconPlus size={18} color="white" />
+              {expanded && (
+                <span style={{ fontSize: 13, fontWeight: 500, color: 'white', whiteSpace: 'nowrap' }}>
+                  Add expense
+                </span>
+              )}
+            </button>
+          </Tip>
+        )}
 
         {/* Settings */}
         <Tip label="Settings" show={collapsed}>

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
-import { IconCircleCheckFilled, IconCheck } from '@tabler/icons-react'
+import { IconCircleCheckFilled, IconCheck, IconInfoCircle } from '@tabler/icons-react'
 import { useCreateEvent } from '@/store/mutations/useEvents'
 import { useGetMe } from '@/store/queries/useAuth'
 import { CURRENCY_OPTIONS, EVENT_PRESETS } from '@/lib/onboarding'
@@ -63,7 +63,7 @@ export function OnboardingStep2() {
   }
 
   const summaryLabel = (c: EventDraft) =>
-    [c.name, c.event_type].filter(Boolean).join(' · ')
+    [c.name, c.event_type, c.date].filter(Boolean).join(' · ')
 
   const summaryBudget = (c: EventDraft) =>
     c.budget ? fCurrency(parseInt(c.budget, 10), baseCurrency) + ' budget' : 'No budget set'
@@ -172,9 +172,14 @@ export function OnboardingStep2() {
                   {/* Vendor currency + Budget */}
                   <div className="grid grid-cols-2 gap-3">
                     <div className="flex flex-col gap-[5px]">
-                      <label className="text-[11px] font-medium text-text-secondary uppercase tracking-[0.05em]">
+                      <label className="text-[11px] font-medium text-text-secondary uppercase tracking-[0.05em] flex items-center gap-1">
                         Vendor currency
-                        <span className="ml-1 text-text-muted normal-case font-normal">· what vendors charge in</span>
+                        <IconInfoCircle
+                          size={13}
+                          color="#9B9890"
+                          style={{ cursor: 'help', flexShrink: 0 }}
+                          title="The currency vendors at this location will likely charge you in"
+                        />
                       </label>
                       <select
                         value={c.vendor_currency}

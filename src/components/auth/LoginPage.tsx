@@ -15,7 +15,11 @@ export function LoginPage() {
 
   const onSubmit = (data: LoginInput) => {
     login(data, {
-      onSuccess: () => navigate({ to: '/overview' }),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      onSuccess: (res: any) => {
+        const to = res?.user?.account_type === 'planner' ? '/clients' : '/overview'
+        navigate({ to })
+      },
     })
   }
 
