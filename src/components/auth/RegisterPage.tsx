@@ -9,9 +9,11 @@ export function RegisterPage() {
   const navigate = useNavigate()
   const { mutate: register_, isPending } = useRegister()
 
-  const { register, handleSubmit, formState: { errors } } = useForm<RegisterInput>({
+  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<RegisterInput>({
     resolver: zodResolver(registerSchema),
+    defaultValues: { account_type: 'couple' },
   })
+  const accountType = watch('account_type')
 
   const onSubmit = (data: RegisterInput) => {
     register_(data, {
@@ -72,11 +74,13 @@ export function RegisterPage() {
           <SelectField
             label="Account type"
             error={errors.account_type?.message}
-            {...register('account_type')}
-          >
-            <option value="couple">Personal — planning my own events</option>
-            <option value="planner">Event planner — managing clients</option>
-          </SelectField>
+            value={accountType}
+            onChange={v => setValue('account_type', v as 'couple' | 'planner', { shouldValidate: true })}
+            options={[
+              { value: 'couple',  label: 'Personal — planning my own events' },
+              { value: 'planner', label: 'Event planner — managing clients' },
+            ]}
+          />
 
           <button
             type="button"

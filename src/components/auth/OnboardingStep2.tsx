@@ -4,6 +4,7 @@ import { IconCircleCheckFilled, IconCheck, IconInfoCircle } from '@tabler/icons-
 import { useCreateEvent } from '@/store/mutations/useEvents'
 import { useGetMe } from '@/store/queries/useAuth'
 import { CURRENCY_OPTIONS, EVENT_PRESETS } from '@/lib/onboarding'
+import { AppSelect } from '@/components/ui/AppSelect'
 import { fCurrency } from '@/lib/format'
 
 interface EventDraft {
@@ -181,16 +182,14 @@ export function OnboardingStep2() {
                           title="The currency vendors at this location will likely charge you in"
                         />
                       </label>
-                      <select
+                      <AppSelect
                         value={c.vendor_currency}
-                        onChange={e => update(c.id, { vendor_currency: e.target.value })}
-                        className="h-[38px] border border-border rounded-[7px] px-3 text-[13px] bg-panel text-text-primary outline-none focus:border-brand w-full"
-                      >
-                        <option value="">Same as base ({baseCurrency})</option>
-                        {CURRENCY_OPTIONS.filter(opt => opt.code !== baseCurrency).map(opt => (
-                          <option key={opt.code} value={opt.code}>{opt.code} — {opt.name}</option>
-                        ))}
-                      </select>
+                        onChange={v => update(c.id, { vendor_currency: v })}
+                        options={[
+                          { value: '', label: `Same as base (${baseCurrency})` },
+                          ...CURRENCY_OPTIONS.filter(opt => opt.code !== baseCurrency).map(opt => ({ value: opt.code, label: `${opt.code} — ${opt.name}` })),
+                        ]}
+                      />
                     </div>
                     <div className="flex flex-col gap-[5px]">
                       <label className="text-[11px] font-medium text-text-secondary uppercase tracking-[0.05em]">Budget</label>

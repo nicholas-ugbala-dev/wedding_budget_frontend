@@ -6,6 +6,7 @@ import { useBaseCurrency } from '@/store/queries/useBaseCurrency'
 import { useCreateEvent, useUpdateEvent, useDeleteEvent } from '@/store/mutations/useEvents'
 import { useClientStore } from '@/store/useClientStore'
 import { CURRENCY_OPTIONS, EVENT_PRESETS } from '@/lib/onboarding'
+import { AppSelect } from '@/components/ui/AppSelect'
 import { fCurrency } from '@/lib/format'
 import type { Event } from '@/types/event'
 
@@ -271,16 +272,14 @@ export function EventsPage() {
                     <div className="grid grid-cols-2 gap-3">
                       <div className="flex flex-col gap-[5px]">
                         <label className="text-[11px] font-medium text-text-secondary uppercase tracking-[0.05em]">Vendor currency</label>
-                        <select
+                        <AppSelect
                           value={c.draftVendorCurrency}
-                          onChange={e => patch(c.id, { draftVendorCurrency: e.target.value })}
-                          className="h-[38px] border border-border rounded-[7px] px-3 text-[13px] bg-panel text-text-primary outline-none focus:border-brand w-full"
-                        >
-                          <option value="">Same as base ({baseCurrency})</option>
-                          {CURRENCY_OPTIONS.filter(opt => opt.code !== baseCurrency).map(opt => (
-                            <option key={opt.code} value={opt.code}>{opt.code} — {opt.name}</option>
-                          ))}
-                        </select>
+                          onChange={v => patch(c.id, { draftVendorCurrency: v })}
+                          options={[
+                            { value: '', label: `Same as base (${baseCurrency})` },
+                            ...CURRENCY_OPTIONS.filter(opt => opt.code !== baseCurrency).map(opt => ({ value: opt.code, label: `${opt.code} — ${opt.name}` })),
+                          ]}
+                        />
                       </div>
                       <div className="flex flex-col gap-[5px]">
                         <label className="text-[11px] font-medium text-text-secondary uppercase tracking-[0.05em]">Budget</label>

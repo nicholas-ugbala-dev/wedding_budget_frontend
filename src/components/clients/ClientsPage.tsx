@@ -7,6 +7,7 @@ import { useCreateClient, useUpdateClient, useDeleteClient } from '@/store/mutat
 import { useClientStore } from '@/store/useClientStore'
 import { CenteredModal } from '@/components/layout/CenteredModal'
 import { CURRENCY_OPTIONS } from '@/lib/onboarding'
+import { AppSelect } from '@/components/ui/AppSelect'
 import { fCurrency, fDate } from '@/lib/format'
 import { toast } from 'sonner'
 import type { Client } from '@/types/client'
@@ -321,19 +322,14 @@ export function ClientsPage() {
               ) : (
                 <>
                   <div style={{ fontSize: 11, color: '#9B9890', marginTop: -2 }}>What currency does your client hold?</div>
-                  <select
+                  <AppSelect
                     value={currency}
-                    onChange={e => {
-                      const next = e.target.value
+                    onChange={next => {
                       setCurrency(next)
                       setExtraCurrencies(prev => prev.filter(c => c !== next))
                     }}
-                    style={{ height: 40, border: '1px solid #E8E6E0', borderRadius: 8, padding: '0 12px', fontSize: 13, background: '#FAFAF8', color: '#1C1B18', width: '100%', outline: 'none' }}
-                  >
-                    {CURRENCY_OPTIONS.map(opt => (
-                      <option key={opt.code} value={opt.code}>{opt.code} — {opt.name}</option>
-                    ))}
-                  </select>
+                    options={CURRENCY_OPTIONS.map(opt => ({ value: opt.code, label: `${opt.code} — ${opt.name}` }))}
+                  />
                 </>
               )}
             </div>
@@ -368,21 +364,16 @@ export function ClientsPage() {
                   ))}
                 </div>
               )}
-              <select
+              <AppSelect
                 value=""
-                onChange={e => {
-                  const code = e.target.value
+                placeholder="+ Add currency…"
+                onChange={code => {
                   if (code && code !== currency && !extraCurrencies.includes(code)) {
                     setExtraCurrencies(prev => [...prev, code])
                   }
                 }}
-                style={{ height: 36, border: '1px solid #E8E6E0', borderRadius: 8, padding: '0 12px', fontSize: 13, background: '#FAFAF8', color: '#9B9890', width: '100%', outline: 'none' }}
-              >
-                <option value="">+ Add currency…</option>
-                {CURRENCY_OPTIONS.filter(opt => opt.code !== currency && !extraCurrencies.includes(opt.code)).map(opt => (
-                  <option key={opt.code} value={opt.code}>{opt.code} — {opt.name}</option>
-                ))}
-              </select>
+                options={CURRENCY_OPTIONS.filter(opt => opt.code !== currency && !extraCurrencies.includes(opt.code)).map(opt => ({ value: opt.code, label: `${opt.code} — ${opt.name}` }))}
+              />
             </div>
           </div>
 

@@ -4,6 +4,7 @@ import { IconCheck } from '@tabler/icons-react'
 import { useCreateEvent } from '@/store/mutations/useEvents'
 import { useGetClients } from '@/store/queries/useClients'
 import { EVENT_PRESETS, CURRENCY_OPTIONS } from '@/lib/onboarding'
+import { AppSelect } from '@/components/ui/AppSelect'
 import type { Client } from '@/types/client'
 
 export function OnboardingPlannerStep2() {
@@ -146,16 +147,14 @@ export function OnboardingPlannerStep2() {
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-[5px]">
               <label className="text-[11px] font-medium text-text-secondary uppercase tracking-[0.05em]">Vendor currency</label>
-              <select
+              <AppSelect
                 value={vendorCurrency}
-                onChange={e => setVendorCurrency(e.target.value)}
-                className="h-[38px] border border-border rounded-[7px] px-3 text-[13px] bg-panel text-text-primary outline-none focus:border-brand w-full"
-              >
-                <option value="">Same as base ({clientCurrency})</option>
-                {CURRENCY_OPTIONS.filter(opt => opt.code !== clientCurrency).map(opt => (
-                  <option key={opt.code} value={opt.code}>{opt.code} — {opt.name}</option>
-                ))}
-              </select>
+                onChange={setVendorCurrency}
+                options={[
+                  { value: '', label: `Same as base (${clientCurrency})` },
+                  ...CURRENCY_OPTIONS.filter(opt => opt.code !== clientCurrency).map(opt => ({ value: opt.code, label: `${opt.code} — ${opt.name}` })),
+                ]}
+              />
             </div>
             <div className="flex flex-col gap-[5px]">
               <label className="text-[11px] font-medium text-text-secondary uppercase tracking-[0.05em]">Budget</label>

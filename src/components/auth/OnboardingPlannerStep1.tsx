@@ -3,6 +3,7 @@ import { useNavigate } from '@tanstack/react-router'
 import { IconX } from '@tabler/icons-react'
 import { useCreateClient } from '@/store/mutations/useClients'
 import { CURRENCY_OPTIONS } from '@/lib/onboarding'
+import { AppSelect } from '@/components/ui/AppSelect'
 import { toast } from 'sonner'
 
 interface ClientPill {
@@ -139,15 +140,11 @@ export function OnboardingPlannerStep1() {
             <label className="text-[11px] font-medium text-text-secondary uppercase tracking-[0.05em]">
               Base currency
             </label>
-            <select
+            <AppSelect
               value={currency}
-              onChange={e => setCurrency(e.target.value)}
-              className="h-[38px] border border-border rounded-[7px] px-3 text-[13px] bg-panel text-text-primary outline-none focus:border-brand w-full"
-            >
-              {CURRENCY_OPTIONS.map(opt => (
-                <option key={opt.code} value={opt.code}>{opt.code} — {opt.name}</option>
-              ))}
-            </select>
+              onChange={setCurrency}
+              options={CURRENCY_OPTIONS.map(opt => ({ value: opt.code, label: `${opt.code} — ${opt.name}` }))}
+            />
             <span className="text-[11px] text-text-muted">What currency does your client hold?</span>
           </div>
 

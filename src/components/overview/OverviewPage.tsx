@@ -7,6 +7,7 @@ import { useClientStore } from '@/store/useClientStore'
 import { useBaseCurrency } from '@/store/queries/useBaseCurrency'
 import { useGetCurrencies } from '@/store/queries/useCurrencies'
 import { useExchangeRate } from '@/store/queries/useExchangeRate'
+import { AppSelect } from '@/components/ui/AppSelect'
 import { fCurrency } from '@/lib/format'
 import { SpendingChart } from './SpendingChart'
 import { DonutChart } from './DonutChart'
@@ -74,25 +75,14 @@ export function OverviewPage() {
           <div className="text-[20px] font-semibold text-text-primary tracking-[-0.3px]">Overview</div>
           <div style={{ fontSize: 13, color: '#595650', marginTop: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
             {clientName && <span>{clientName} ·</span>}
-            <select
+            <AppSelect
+              variant="inline"
               value={displayCurrency}
-              onChange={e => handleCurrencyChange(e.target.value)}
+              onChange={handleCurrencyChange}
               disabled={rateLoading || currencyCodes.length <= 1}
-              style={{
-                border: 'none',
-                background: 'transparent',
-                fontSize: 13,
-                color: isConverted ? '#B87820' : '#595650',
-                cursor: currencyCodes.length > 1 && !rateLoading ? 'pointer' : 'default',
-                fontFamily: 'inherit',
-                padding: 0,
-                outline: 'none',
-              }}
-            >
-              {currencyCodes.map(code => (
-                <option key={code} value={code}>{code}</option>
-              ))}
-            </select>
+              options={currencyCodes.map(code => ({ value: code, label: code }))}
+              style={{ color: isConverted ? '#B87820' : '#595650' }}
+            />
             {isConverted && !rateLoading && (
               <span style={{ fontSize: 11, color: '#C0BEB8' }}>· approx.</span>
             )}
