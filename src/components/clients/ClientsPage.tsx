@@ -59,7 +59,7 @@ export function ClientsPage() {
   const toggleSelect = (id: string) =>
     setSelected(prev => {
       const next = new Set(prev)
-      next.has(id) ? next.delete(id) : next.add(id)
+      if (next.has(id)) next.delete(id); else next.add(id)
       return next
     })
 
@@ -91,17 +91,16 @@ export function ClientsPage() {
       toast.error('First name is required')
       return
     }
-    const payload = {
+    const base = {
       first_name: firstName.trim(),
       last_name: lastName.trim() || undefined,
-      ...(isEdit ? {} : { currency_code: currency }),
       extra_currencies: extraCurrencies.length ? extraCurrencies : undefined,
     }
     if (!isEdit) {
-      createClient(payload, { onSuccess: closeModal })
+      createClient({ ...base, currency_code: currency }, { onSuccess: closeModal })
     } else {
       updateClient(
-        { id: editingId!, ...payload },
+        { id: editingId!, ...base },
         { onSuccess: () => { closeModal(); setSelected(new Set()) } },
       )
     }
