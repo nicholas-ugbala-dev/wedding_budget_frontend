@@ -12,6 +12,9 @@ export const AUTH_RESET           = `${BASE}/auth/reset-password`
 export const EVENTS               = `${BASE}/events`
 export const EVENT_BY_ID          = (id: string) => `${BASE}/events/${id}`
 
+export const CLIENTS              = `${BASE}/clients`
+export const CLIENT_BY_ID         = (id: string) => `${BASE}/clients/${id}`
+
 export const CURRENCIES           = `${BASE}/currencies`
 export const CURRENCY_BY_CODE     = (code: string) => `${BASE}/currencies/${code}`
 

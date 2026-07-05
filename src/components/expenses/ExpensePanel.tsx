@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { IconX } from '@tabler/icons-react'
 import { useGetEvents } from '@/store/queries/useEvents'
-import { useGetMe } from '@/store/queries/useAuth'
+import { useBaseCurrency } from '@/store/queries/useBaseCurrency'
+import { useGetCurrencies } from '@/store/queries/useCurrencies'
 import { useCreateExpense } from '@/store/mutations/useExpenses'
 import { useUpdateExpense } from '@/store/mutations/useExpenses'
 import { CategoryCombobox } from './CategoryCombobox'
@@ -20,10 +21,12 @@ interface Props {
 type FormData = {
   name: string
   event_id: string
+  base_currency: string
   vendor_name: string
   vendor_phone: string
   vendor_email: string
   actual_amount: string
+  refundable_amount: string
   notes: string
   payment_deadline: string
 }
@@ -51,58 +54,91 @@ const inputStyle: React.CSSProperties = {
 }
 
 export function ExpensePanel({ expense, onClose }: Props) {
-  const { data: user }         = useGetMe()
-  const { data: events = [] } = useGetEvents()
-  const createExpense          = useCreateExpense()
-  const updateExpense          = useUpdateExpense()
+  const { data: events = [] }  = useGetEvents()
+  const { data: wallets = [] } = useGetCurrencies()
+  const createExpense           = useCreateExpense()
+  const updateExpense           = useUpdateExpense()
 
   const isEdit    = !!expense
   const isPending = createExpense.isPending || updateExpense.isPending
-  const currency  = user?.base_currency ?? 'NGN'
+  const fallbackCurrency = useBaseCurrency()
 
   const [category, setCategory] = useState<CategoryValue>(() => ({
     id:   expense?.category_id   ?? undefined,
     name: expense?.category_name ?? '',
   }))
 
-  const { register, handleSubmit, reset, control } = useForm<FormData>({
+  const { register, handleSubmit, reset, control, watch, setValue } = useForm<FormData>({
     defaultValues: expense ? {
-      name:             expense.name,
-      event_id:      expense.event_id,
-      vendor_name:      expense.vendor_name ?? '',
-      vendor_phone:     '',
-      vendor_email:     '',
-      actual_amount:    expense.actual_amount != null ? String(expense.actual_amount) : '',
-      notes:            expense.notes ?? '',
-      payment_deadline: expense.payment_deadline?.slice(0, 10) ?? '',
+      name:               expense.name,
+      event_id:           expense.event_id,
+      base_currency:      expense.base_currency,
+      vendor_name:        expense.vendor_name ?? '',
+      vendor_phone:       '',
+      vendor_email:       '',
+      actual_amount:      expense.actual_amount != null ? String(expense.actual_amount) : '',
+      refundable_amount:  expense.refundable_amount != null ? String(expense.refundable_amount) : '',
+      notes:              expense.notes ?? '',
+      payment_deadline:   expense.payment_deadline?.slice(0, 10) ?? '',
     } : undefined,
   })
 
   useEffect(() => {
     if (expense) reset({
-      name:             expense.name,
-      event_id:      expense.event_id,
-      vendor_name:      expense.vendor_name ?? '',
-      vendor_phone:     '',
-      vendor_email:     '',
-      actual_amount:    expense.actual_amount != null ? String(expense.actual_amount) : '',
-      notes:            expense.notes ?? '',
-      payment_deadline: expense.payment_deadline?.slice(0, 10) ?? '',
+      name:               expense.name,
+      event_id:           expense.event_id,
+      base_currency:      expense.base_currency,
+      vendor_name:        expense.vendor_name ?? '',
+      vendor_phone:       '',
+      vendor_email:       '',
+      actual_amount:      expense.actual_amount != null ? String(expense.actual_amount) : '',
+      refundable_amount:  expense.refundable_amount != null ? String(expense.refundable_amount) : '',
+      notes:              expense.notes ?? '',
+      payment_deadline:   expense.payment_deadline?.slice(0, 10) ?? '',
     })
   }, [expense, reset])
+
+  const watchedEventId = watch('event_id')
+  const selectedEvent  = useMemo(
+    () => (events as Event[]).find(e => e.id === watchedEventId) ?? null,
+    [events, watchedEventId],
+  )
+
+  // When event changes in create mode, default base_currency to the event's vendor_currency
+  useEffect(() => {
+    if (!isEdit && selectedEvent?.vendor_currency) {
+      setValue('base_currency', selectedEvent.vendor_currency)
+    }
+  }, [isEdit, selectedEvent, setValue])
+
+  // Currency options: event vendor_currency first, then client/user wallets — deduplicated
+  const currencyOptions = useMemo(() => {
+    const seen = new Set<string>()
+    const opts: { value: string; label: string }[] = []
+    const add = (code: string) => {
+      if (!seen.has(code)) { seen.add(code); opts.push({ value: code, label: code }) }
+    }
+    if (selectedEvent?.vendor_currency) add(selectedEvent.vendor_currency)
+    wallets.forEach((w: { currency_code: string }) => add(w.currency_code))
+    return opts
+  }, [selectedEvent, wallets])
+
+  const selectedCurrency = watch('base_currency') || fallbackCurrency
 
   function onSubmit(data: FormData) {
     const hasAmount = !!data.actual_amount && Number(data.actual_amount) > 0
     const base = {
-      name:             data.name,
-      event_id:      data.event_id,
-      vendor_name:      data.vendor_name  || undefined,
-      vendor_phone:     data.vendor_phone || undefined,
-      vendor_email:     data.vendor_email || undefined,
-      actual_amount:    hasAmount ? Number(data.actual_amount) : undefined,
-      notes:            data.notes        || undefined,
-      payment_deadline: data.payment_deadline || undefined,
-      is_planned:       !hasAmount,
+      name:              data.name,
+      event_id:          data.event_id,
+      base_currency:     data.base_currency || fallbackCurrency,
+      vendor_name:       data.vendor_name  || undefined,
+      vendor_phone:      data.vendor_phone || undefined,
+      vendor_email:      data.vendor_email || undefined,
+      actual_amount:     hasAmount ? Number(data.actual_amount) : undefined,
+      refundable_amount: data.refundable_amount ? Number(data.refundable_amount) : undefined,
+      notes:             data.notes        || undefined,
+      payment_deadline:  data.payment_deadline || undefined,
+      is_planned:        !hasAmount,
     }
 
     if (isEdit && expense) {
@@ -125,42 +161,49 @@ export function ExpensePanel({ expense, onClose }: Props) {
   return (
     <div
       style={{
-        width: 440,
-        height: '100vh',
+        width: 560,
         background: 'white',
-        borderLeft: '1px solid #E8E6E0',
+        borderRadius: 12,
+        maxHeight: '90vh',
+        overflowY: 'auto',
         display: 'flex',
         flexDirection: 'column',
-        animation: 'slideIn 0.22s ease',
-        overflowY: 'auto',
+        animation: 'fadeUp 0.2s ease',
+        boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
       }}
     >
       {/* Header */}
       <div
         style={{
-          padding: '20px 24px',
+          padding: '22px 28px',
           borderBottom: '1px solid #F0EDE6',
           display: 'flex',
-          alignItems: 'center',
+          alignItems: 'flex-start',
           justifyContent: 'space-between',
           flexShrink: 0,
         }}
       >
-        <div style={{ fontSize: 16, fontWeight: 600, color: '#1C1B18' }}>
-          {isEdit ? 'Edit expense' : 'Add expense'}
+        <div>
+          <div style={{ fontSize: 16, fontWeight: 600, color: '#1C1B18' }}>
+            {isEdit ? 'Edit expense' : 'Add expense'}
+          </div>
+          <div style={{ fontSize: 12, color: '#9B9890', marginTop: 2 }}>
+            Track what it costs and who's providing it
+          </div>
         </div>
         <button
           type="button"
           onClick={onClose}
           style={{
-            width: 28, height: 28,
+            width: 30, height: 30,
             border: '1px solid #E8E6E0',
-            borderRadius: 6,
+            borderRadius: 7,
             background: 'white',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
+            flexShrink: 0,
           }}
         >
           <IconX size={14} color="#595650" />
@@ -170,10 +213,15 @@ export function ExpensePanel({ expense, onClose }: Props) {
       {/* Form body */}
       <form
         onSubmit={handleSubmit(onSubmit)}
-        style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 14, flex: 1 }}
+        style={{ padding: '20px 28px', display: 'flex', flexDirection: 'column', gap: 14 }}
       >
 
-        {/* Expense name */}
+        {/* EXPENSE section */}
+        <div style={{ fontSize: 10, fontWeight: 600, color: '#9B9890', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+          Expense
+        </div>
+
+        {/* Name */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
           <label style={labelStyle}>Expense name</label>
           <input {...register('name', { required: true })} placeholder="e.g. Photographer" style={inputStyle} />
@@ -207,14 +255,79 @@ export function ExpensePanel({ expense, onClose }: Props) {
           </div>
         </div>
 
-        {/* Vendor name */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-          <label style={labelStyle}>Vendor name</label>
-          <input {...register('vendor_name')} placeholder="e.g. Panashe Events" style={inputStyle} />
+        {/* COST section */}
+        <div style={{ fontSize: 10, fontWeight: 600, color: '#9B9890', textTransform: 'uppercase', letterSpacing: '0.07em', marginTop: 4 }}>
+          Cost
         </div>
 
-        {/* Phone + Email */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        {/* Vendor currency */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+          <label style={labelStyle}>Vendor currency</label>
+          <Controller
+            control={control}
+            name="base_currency"
+            rules={{ required: true }}
+            render={({ field }) => (
+              <AppSelect
+                value={field.value ?? ''}
+                onChange={field.onChange}
+                placeholder="Select currency…"
+                options={currencyOptions}
+              />
+            )}
+          />
+          <span style={{ fontSize: 11, color: '#9B9890' }}>The currency this vendor invoices in — determines when exchange rates are needed</span>
+        </div>
+
+        {/* Amount | Refundable | Deadline */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+            <label style={labelStyle}>Amount</label>
+            <div style={{ display: 'flex' }}>
+              <input
+                type="number"
+                {...register('actual_amount')}
+                placeholder="0"
+                style={{ ...inputStyle, borderRadius: '7px 0 0 7px', borderRight: 0 }}
+              />
+              <div style={{ height: 38, border: '1px solid #E8E6E0', borderLeft: 0, borderRadius: '0 7px 7px 0', padding: '0 10px', fontSize: 12, fontWeight: 600, background: '#F2F1EC', color: '#9B9890', display: 'flex', alignItems: 'center', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                {selectedCurrency}
+              </div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+            <label style={labelStyle}>Refundable</label>
+            <div style={{ display: 'flex' }}>
+              <input
+                type="number"
+                {...register('refundable_amount')}
+                placeholder="0"
+                style={{ ...inputStyle, borderRadius: '7px 0 0 7px', borderRight: 0 }}
+              />
+              <div style={{ height: 38, border: '1px solid #E8E6E0', borderLeft: 0, borderRadius: '0 7px 7px 0', padding: '0 10px', fontSize: 12, fontWeight: 600, background: '#F2F1EC', color: '#9B9890', display: 'flex', alignItems: 'center', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                {selectedCurrency}
+              </div>
+            </div>
+            <span style={{ fontSize: 11, color: '#9B9890' }}>Deposit or caution fee you expect back</span>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+            <label style={labelStyle}>Payment deadline</label>
+            <input type="date" {...register('payment_deadline')} style={inputStyle} />
+            <span style={{ fontSize: 11, color: '#9B9890' }}>When full payment is due</span>
+          </div>
+        </div>
+
+        {/* VENDOR section */}
+        <div style={{ fontSize: 10, fontWeight: 600, color: '#9B9890', textTransform: 'uppercase', letterSpacing: '0.07em', marginTop: 4 }}>
+          Vendor
+        </div>
+
+        {/* Name | Phone | Email */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+            <label style={labelStyle}>Vendor name</label>
+            <input {...register('vendor_name')} placeholder="e.g. Panashe Events" style={inputStyle} />
+          </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
             <label style={labelStyle}>Phone</label>
             <input {...register('vendor_phone')} placeholder="+1 555 …" style={inputStyle} />
@@ -225,43 +338,14 @@ export function ExpensePanel({ expense, onClose }: Props) {
           </div>
         </div>
 
-        {/* Amount + Currency */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px', gap: 12 }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-            <label style={labelStyle}>Amount</label>
-            <input type="number" {...register('actual_amount')} placeholder="0" style={inputStyle} />
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-            <label style={labelStyle}>Currency</label>
-            <div
-              style={{
-                ...inputStyle,
-                display: 'flex',
-                alignItems: 'center',
-                color: '#9B9890',
-                cursor: 'default',
-              }}
-            >
-              {currency}
-            </div>
-          </div>
-        </div>
-
         {/* Notes */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
           <label style={labelStyle}>Notes</label>
           <input {...register('notes')} placeholder="Agreements, reminders…" style={inputStyle} />
         </div>
 
-        {/* Payment deadline */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-          <label style={labelStyle}>Final payment deadline</label>
-          <input type="date" {...register('payment_deadline')} style={inputStyle} />
-          <span style={{ fontSize: 11, color: '#9B9890' }}>The date by which full payment must be made</span>
-        </div>
-
         {/* Footer */}
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 'auto' }}>
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', paddingTop: 4, paddingBottom: 8 }}>
           <button
             type="button"
             onClick={onClose}

@@ -1,5 +1,6 @@
 export const ME_KEY = 'me'
 export const EVENTS_KEY = 'events'
+export const CLIENTS_KEY = 'clients'
 export const CURRENCIES_KEY = 'currencies'
 export const VENDORS_KEY = 'vendors'
 export const CATEGORIES_KEY = 'categories'

@@ -2,7 +2,7 @@ import { useNavigate } from '@tanstack/react-router'
 import { useGetPayments } from '@/store/queries/usePayments'
 import { useGetPaymentSummary } from '@/store/queries/usePayments'
 import { useGetEvents } from '@/store/queries/useEvents'
-import { useGetMe } from '@/store/queries/useAuth'
+import { useBaseCurrency } from '@/store/queries/useBaseCurrency'
 import { useReducerSpread } from '@/hooks/useReducerSpread'
 import { fCurrency, fCurrencyFull, fDate } from '@/lib/format'
 import { cerStyle } from '@/lib/utils'
@@ -24,9 +24,8 @@ const PAYMENT_TYPE_STYLE: Record<string, { bg: string; color: string }> = {
 
 export function PaymentsPage() {
   const navigate = useNavigate()
-  const { data: user }        = useGetMe()
   const { data: events = [] } = useGetEvents()
-  const currency = user?.base_currency ?? 'NGN'
+  const currency = useBaseCurrency()
 
   const evIndexMap = Object.fromEntries(
     (events as Event[]).map((e, i) => [e.id, i])
@@ -88,9 +87,9 @@ export function PaymentsPage() {
             const ptLabel = PAYMENT_TYPE_LABEL[pay.payment_type] ?? pay.payment_type
             const cerIdx  = evIndexMap[pay.event_id] ?? 0
             const cer     = cerStyle(cerIdx)
-            const isForeign = pay.wallet_currency_code !== currency
+            const isForeign = pay.wallet_currency_code !== pay.expense_base_currency
             const rateInfo = isForeign && pay.exchange_rate
-              ? `1 ${pay.wallet_currency_code} = ${fCurrencyFull(pay.exchange_rate, currency)}`
+              ? `1 ${pay.wallet_currency_code} = ${fCurrencyFull(pay.exchange_rate, pay.expense_base_currency)}`
               : null
 
             return (
@@ -130,7 +129,7 @@ export function PaymentsPage() {
                 {/* Right: amount + date */}
                 <div className="text-right shrink-0 ml-4">
                   <div style={{ fontSize: 15, fontWeight: 600, color: '#1C1B18', fontVariantNumeric: 'tabular-nums' }}>
-                    {fCurrencyFull(pay.base_amount, currency)}
+                    {fCurrencyFull(pay.base_amount, pay.expense_base_currency)}
                   </div>
                   <div style={{ fontSize: 11, color: '#9B9890', marginTop: 2 }}>{fDate(pay.payment_date)}</div>
                 </div>

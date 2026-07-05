@@ -5,7 +5,7 @@ export interface Payment {
     id: string;
     expense_id: string;
     payment_type: PaymentType;
-    user_currency_id: string;
+    user_currency_id: string | null;
     wallet_currency_code: string;
     wallet_amount: string
     exchange_rate: string | null;
@@ -35,6 +35,9 @@ export interface PaymentListItem {
   wallet_amount: string
   exchange_rate: string | null
   base_amount: string
+  expense_base_currency: string
+  reporting_currency_code: string | null
+  reporting_amount: string | null
   payment_date: string
   notes: string | null
   created_at: string

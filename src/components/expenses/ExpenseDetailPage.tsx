@@ -1,13 +1,12 @@
 import { useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
-import { IconArrowLeft, IconPlus } from '@tabler/icons-react'
+import { IconArrowLeft, IconPlus, IconReceiptOff } from '@tabler/icons-react'
 import { useGetExpenseById } from '@/store/queries/useExpenses'
 import { useGetEvents } from '@/store/queries/useEvents'
-import { useGetMe } from '@/store/queries/useAuth'
 import { useDeletePayment } from '@/store/mutations/usePayments'
 import { fCurrencyFull, pct } from '@/lib/format'
 import { cerStyle, statusStyle, progressColor, PENDING_STYLE } from '@/lib/utils'
-import { SlidePanel } from '@/components/layout/SlidePanel'
+import { CenteredModal } from '@/components/layout/CenteredModal'
 import { ExpensePanel } from './ExpensePanel'
 import { PaymentPanel } from './PaymentPanel'
 import { PaymentCard } from './PaymentCard'
@@ -21,12 +20,9 @@ export function ExpenseDetailPage({ expenseId }: Props) {
   const [paymentOpen, setPaymentOpen]   = useState(false)
   const [editPayment, setEditPayment]   = useState<Payment | null>(null)
   const navigate              = useNavigate()
-  const { data: user }        = useGetMe()
   const { data: events = [] } = useGetEvents()
   const { data: expense, isLoading } = useGetExpenseById(expenseId)
   const deletePayment         = useDeletePayment()
-
-  const currency = user?.base_currency ?? 'NGN'
 
   if (isLoading) return <div className="p-8 text-[13px] text-text-muted">Loading…</div>
   if (!expense)  return <div className="p-8 text-[13px] text-text-muted">Expense not found</div>
@@ -109,19 +105,19 @@ export function ExpenseDetailPage({ expenseId }: Props) {
           <div>
             <div style={{ fontSize: 10, fontWeight: 600, color: '#9B9890', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 4 }}>Actual amount</div>
             <div style={{ fontSize: 13, fontWeight: 500, color: '#1C1B18', fontVariantNumeric: 'tabular-nums' }}>
-              {actual ? fCurrencyFull(actual, currency) : '—'}
+              {actual ? fCurrencyFull(actual, expense.base_currency) : '—'}
             </div>
           </div>
           <div>
             <div style={{ fontSize: 10, fontWeight: 600, color: '#9B9890', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 4 }}>Total paid</div>
             <div style={{ fontSize: 13, fontWeight: 500, color: '#3A7A5A', fontVariantNumeric: 'tabular-nums' }}>
-              {paid ? fCurrencyFull(paid, currency) : '—'}
+              {paid ? fCurrencyFull(paid, expense.base_currency) : '—'}
             </div>
           </div>
           <div>
             <div style={{ fontSize: 10, fontWeight: 600, color: '#9B9890', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 4 }}>Balance</div>
             <div style={{ fontSize: 13, fontWeight: 500, fontVariantNumeric: 'tabular-nums', color: noAmount ? '#9B9890' : balance > 0 ? '#C43C3C' : '#3A7A5A' }}>
-              {noAmount ? '—' : balance > 0 ? fCurrencyFull(balance, currency) : 'Fully paid'}
+              {noAmount ? '—' : balance > 0 ? fCurrencyFull(balance, expense.base_currency) : 'Fully paid'}
             </div>
           </div>
         </div>
@@ -155,7 +151,8 @@ export function ExpenseDetailPage({ expenseId }: Props) {
 
       {/* Payment cards */}
       {expense.payments.length === 0 ? (
-        <div className="bg-surface border border-border rounded-[10px] flex flex-col items-center justify-center py-10 gap-2.5">
+        <div className="bg-surface border border-border rounded-[10px] flex flex-col items-center justify-center py-12 gap-3">
+          <IconReceiptOff size={32} color="#C0BEB8" />
           <div style={{ fontSize: 13, color: '#9B9890' }}>No payments recorded yet.</div>
           <div style={{ fontSize: 12, color: '#C0BEB8' }}>Add the first payment above.</div>
         </div>
@@ -165,7 +162,7 @@ export function ExpenseDetailPage({ expenseId }: Props) {
             <PaymentCard
               key={payment.id}
               payment={payment}
-              currency={currency}
+              currency={expense.base_currency}
               onEdit={() => setEditPayment(payment)}
               onDelete={() => deletePayment.mutate({ expenseId, paymentId: payment.id })}
             />
@@ -173,15 +170,15 @@ export function ExpenseDetailPage({ expenseId }: Props) {
         </div>
       )}
 
-      <SlidePanel open={editOpen} onClose={() => setEditOpen(false)}>
+      <CenteredModal open={editOpen} onClose={() => setEditOpen(false)}>
         <ExpensePanel expense={expense} onClose={() => setEditOpen(false)} />
-      </SlidePanel>
+      </CenteredModal>
 
-      <SlidePanel open={paymentOpen} onClose={() => setPaymentOpen(false)}>
+      <CenteredModal open={paymentOpen} onClose={() => setPaymentOpen(false)}>
         <PaymentPanel expense={expense} onClose={() => setPaymentOpen(false)} />
-      </SlidePanel>
+      </CenteredModal>
 
-      <SlidePanel open={!!editPayment} onClose={() => setEditPayment(null)}>
+      <CenteredModal open={!!editPayment} onClose={() => setEditPayment(null)}>
         {editPayment && (
           <PaymentPanel
             expense={expense}
@@ -189,7 +186,7 @@ export function ExpenseDetailPage({ expenseId }: Props) {
             onClose={() => setEditPayment(null)}
           />
         )}
-      </SlidePanel>
+      </CenteredModal>
 
     </div>
   )

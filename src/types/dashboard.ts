@@ -18,7 +18,7 @@ export interface DashboardKpis {
 
 export interface DashboardData {
     kpis: DashboardKpis;
-    bar_chart: { category: string; actual_amount: string; total_paid: string }[];
+    bar_chart: { category: string; actual_amount: string; planned_amount: string; total_paid: string }[];
     donut_chart: { category: string; amount: string; pct: string }[];
     payment_progress: {
         expense_id: string;

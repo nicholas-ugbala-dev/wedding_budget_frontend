@@ -4,12 +4,11 @@ import { IconSearch, IconPlus } from '@tabler/icons-react'
 import { AppSelect } from '@/components/ui/AppSelect'
 import { useGetExpenses } from '@/store/queries/useExpenses'
 import { useGetEvents } from '@/store/queries/useEvents'
-import { useGetMe } from '@/store/queries/useAuth'
 import { useReducerSpread } from '@/hooks/useReducerSpread'
 import { fCurrency } from '@/lib/format'
 import { cerStyle, statusStyle, PENDING_STYLE } from '@/lib/utils'
 import { Pagination } from '@/components/ui/Pagination'
-import { SlidePanel } from '@/components/layout/SlidePanel'
+import { CenteredModal } from '@/components/layout/CenteredModal'
 import { ExpensePanel } from './ExpensePanel'
 import type { Expense } from '@/types/expense'
 import type { Event } from '@/types/event'
@@ -24,9 +23,8 @@ const STATUS_OPTIONS = [
 export function ExpensesPage() {
   const navigate = useNavigate()
   const [addOpen, setAddOpen] = useState(false)
-  const { data: user } = useGetMe()
   const { data: events = [] } = useGetEvents()
-  const currency = user?.base_currency ?? 'NGN'
+
 
   // Stable color index per ceremony
   const evIndexMap = Object.fromEntries(
@@ -66,16 +64,16 @@ export function ExpensesPage() {
             <div className="flex items-center gap-1.5 mt-0.5">
               <span style={{ fontSize: 13, color: '#595650' }}>
                 {pg.total} {pg.total === 1 ? 'expense' : 'expenses'}
+                {!filters.event_id && (events as Event[]).length > 0 && (
+                  <> across {(events as Event[]).length} {(events as Event[]).length === 1 ? 'event' : 'events'}</>
+                )}
               </span>
               {filters.event_id && (() => {
-                
                 const name = (events as Event[]).find(c => c.id === filters.event_id)?.name
                 return name ? (
                   <>
                     <span style={{ fontSize: 13, color: '#C0BEB8' }}>·</span>
-                    <span style={{ fontSize: 13, color: '#595650' }}>
-                      {name}
-                    </span>
+                    <span style={{ fontSize: 13, color: '#595650' }}>{name}</span>
                   </>
                 ) : null
               })()}
@@ -183,7 +181,7 @@ export function ExpensesPage() {
 
                 {/* Amount */}
                 <div className="text-[13px] text-text-primary tabular-nums">
-                  {item.actual_amount != null ? fCurrency(item.actual_amount, currency) : <span className="text-text-muted">—</span>}
+                  {item.actual_amount != null ? fCurrency(item.actual_amount, item.base_currency) : <span className="text-text-muted">—</span>}
                 </div>
 
                 {/* Status badge */}
@@ -198,7 +196,7 @@ export function ExpensesPage() {
 
                 {/* Balance */}
                 <div className="text-[13px] tabular-nums text-right" style={{ color: noAmount ? '#9B9890' : balance <= 0 ? '#3A7A5A' : '#C43C3C' }}>
-                  {noAmount ? '—' : balance <= 0 ? 'Paid' : fCurrency(balance, currency)}
+                  {noAmount ? '—' : balance <= 0 ? 'Paid' : fCurrency(balance, item.base_currency)}
                 </div>
               </div>
             )
@@ -217,9 +215,9 @@ export function ExpensesPage() {
         </div>
       )}
 
-      <SlidePanel open={addOpen} onClose={() => setAddOpen(false)}>
+      <CenteredModal open={addOpen} onClose={() => setAddOpen(false)}>
         <ExpensePanel onClose={() => setAddOpen(false)} />
-      </SlidePanel>
+      </CenteredModal>
 
     </div>
   )

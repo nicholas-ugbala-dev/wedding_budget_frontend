@@ -22,7 +22,7 @@ export function ForgotPasswordPage() {
   if (sent) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-bg px-4">
-        <div className="w-[400px] text-center [animation:fadeUp_0.25s_ease]">
+        <div className="w-100 text-center animation-[fadeUp_0.25s_ease]">
           <div className="w-14 h-14 rounded-full bg-brand-light border border-[#C8DDD4] inline-flex items-center justify-center mb-[18px]">
             <IconCheck size={24} color="#3A7A5A" />
           </div>
@@ -42,7 +42,7 @@ export function ForgotPasswordPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-bg px-4">
-      <div className="w-[400px] [animation:fadeUp_0.25s_ease]">
+      <div className="w-100 animation-[fadeUp_0.25s_ease]">
 
         <div className="text-center mb-7">
           <div className="w-11 h-11 rounded-[10px] bg-brand inline-flex items-center justify-center mb-3.5">

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { IconX, IconExchange, IconLock } from '@tabler/icons-react'
 import { useGetCurrencies } from '@/store/queries/useCurrencies'
@@ -14,6 +14,12 @@ interface UserCurrency {
   currency_code: string
 }
 
+interface ClientCurrency {
+  id: string         // = currency_code for planners
+  currency_code: string
+  is_base?: boolean
+}
+
 interface Props {
   expense: ExpenseDetail
   payment?: Payment
@@ -23,7 +29,7 @@ interface Props {
 type FormData = {
   payment_type: 'deposit' | 'balance' | 'full_payment'
   payment_date: string
-  wallet_currency_id: string
+  wallet_currency_id: string  // UUID for couples, currency code for planners
   notes: string
 }
 
@@ -74,8 +80,12 @@ export function PaymentPanel({ expense, payment, onClose }: Props) {
   const updatePayment             = useUpdatePayment()
 
   const isEdit       = !!payment
-  const baseCurrency = user?.base_currency ?? 'NGN'
-  const wallets      = currencies as UserCurrency[]
+  const baseCurrency = expense.base_currency   // the currency this expense is denominated in
+  const isPlanner    = user?.account_type === 'planner'
+
+  // For planners: currencies come back as ClientCurrency[] (id = currency_code)
+  // For couples: currencies come back as UserCurrency[] (id = UUID)
+  const wallets = currencies as (UserCurrency | ClientCurrency)[]
 
   const { register, handleSubmit, watch, control, reset } = useForm<FormData>({
     defaultValues: {
@@ -84,40 +94,78 @@ export function PaymentPanel({ expense, payment, onClose }: Props) {
     },
   })
 
-  const [walletAmount, setWalletAmount] = useState('')
-  const [exchangeRate, setExchangeRate] = useState('')
+  const [walletAmount, setWalletAmount]     = useState('')
+  const [exchangeRate, setExchangeRate]     = useState('')
+  const [isRateFetching, setIsRateFetching] = useState(false)
+  // Set to true by the edit pre-fill effect before calling reset(),
+  // so the currency effect knows to skip the change triggered by reset().
+  const editPreFillPending = useRef(false)
 
   useEffect(() => {
     if (payment) {
+      editPreFillPending.current = true
       reset({
         payment_type:       payment.payment_type,
         payment_date:       payment.payment_date.slice(0, 10),
-        wallet_currency_id: payment.user_currency_id,
+        wallet_currency_id: isPlanner ? payment.wallet_currency_code : (payment.user_currency_id ?? ''),
         notes:              payment.notes ?? '',
       })
       setWalletAmount(String(payment.wallet_amount))
       setExchangeRate(payment.exchange_rate ? String(payment.exchange_rate) : '')
     }
-  }, [payment, reset])
+  }, [payment, reset, isPlanner])
 
   const selectedCurrencyId = watch('wallet_currency_id')
-  const selectedWallet     = wallets.find(w => w.id === selectedCurrencyId)
-  const walletCode         = selectedWallet?.currency_code ?? baseCurrency
-  const isForeign          = walletCode !== baseCurrency
+
+  // For planners: the form value IS the currency code; for couples: look up from wallet list
+  const selectedWallet = !isPlanner ? (wallets as UserCurrency[]).find(w => w.id === selectedCurrencyId) : null
+  const walletCode     = isPlanner ? (selectedCurrencyId || baseCurrency) : (selectedWallet?.currency_code ?? baseCurrency)
+  const isForeign      = walletCode !== baseCurrency
+
+  useEffect(() => {
+    // No currency selected yet — nothing to do.
+    if (!selectedCurrencyId) return
+    // The re-render triggered by reset() in edit pre-fill — skip it.
+    if (editPreFillPending.current) {
+      editPreFillPending.current = false
+      return
+    }
+
+    setWalletAmount('')
+    setExchangeRate('')
+    if (!isForeign || walletCode === baseCurrency) return
+
+    const controller = new AbortController()
+    setIsRateFetching(true)
+    fetch(`https://open.er-api.com/v6/latest/${walletCode}`, { signal: controller.signal })
+      .then(r => r.json())
+      .then((d: { rates?: Record<string, number> }) => {
+        const rate = d?.rates?.[baseCurrency]
+        if (rate != null) setExchangeRate(parseFloat(rate.toFixed(6)).toString())
+      })
+      .catch(() => {})
+      .finally(() => setIsRateFetching(false))
+    return () => controller.abort()
+  }, [selectedCurrencyId])
 
   const baseEquivalent = isForeign && walletAmount && exchangeRate
     ? Math.round(Number(walletAmount) * Number(exchangeRate))
     : null
 
   function onSubmit(data: FormData) {
+    // Build the wallet currency field based on account type
+    const walletField = isPlanner
+      ? { wallet_currency_code: data.wallet_currency_id.toUpperCase() }
+      : { user_currency_id: data.wallet_currency_id }
+
     if (isEdit && payment) {
       const updatePayload: Record<string, unknown> = {
-        expenseId:        expense.id,
-        paymentId:        payment.id,
-        payment_type:     data.payment_type,
-        payment_date:     data.payment_date,
-        user_currency_id: data.wallet_currency_id,
-        notes:            data.notes || null,
+        expenseId:    expense.id,
+        paymentId:    payment.id,
+        payment_type: data.payment_type,
+        payment_date: data.payment_date,
+        ...walletField,
+        notes:        data.notes || null,
       }
 
       if (isForeign) {
@@ -132,11 +180,11 @@ export function PaymentPanel({ expense, payment, onClose }: Props) {
       updatePayment.mutate(updatePayload as Parameters<typeof updatePayment.mutate>[0], { onSuccess: onClose })
     } else {
       const createPayload: Record<string, unknown> = {
-        expenseId:        expense.id,
-        payment_type:     data.payment_type,
-        payment_date:     data.payment_date,
-        user_currency_id: data.wallet_currency_id,
-        notes:            data.notes || undefined,
+        expenseId:    expense.id,
+        payment_type: data.payment_type,
+        payment_date: data.payment_date,
+        ...walletField,
+        notes:        data.notes || undefined,
       }
 
       if (isForeign) {
@@ -157,42 +205,57 @@ export function PaymentPanel({ expense, payment, onClose }: Props) {
   const noAmount   = !expense.actual_amount || Number(expense.actual_amount) === 0
   const vendorLine = expense.vendor_name ? ` · ${expense.vendor_name}` : ''
 
+  // Build select options — same shape for both flows since planner uses code as id
+  const walletOptions = wallets.map(w => ({
+    value: w.id,
+    label: w.currency_code === baseCurrency
+      ? `${w.currency_code} (base)`
+      : w.currency_code,
+  }))
+
   return (
     <div
       style={{
-        width: 440,
-        height: '100vh',
+        width: 480,
         background: 'white',
-        borderLeft: '1px solid #E8E6E0',
+        borderRadius: 12,
+        maxHeight: '90vh',
+        overflowY: 'auto',
         display: 'flex',
         flexDirection: 'column',
-        animation: 'slideIn 0.22s ease',
-        overflowY: 'auto',
+        animation: 'fadeUp 0.2s ease',
+        boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
       }}
     >
       {/* Header */}
       <div
         style={{
-          padding: '20px 24px',
+          padding: '22px 28px',
           borderBottom: '1px solid #F0EDE6',
           display: 'flex',
-          alignItems: 'center',
+          alignItems: 'flex-start',
           justifyContent: 'space-between',
           flexShrink: 0,
         }}
       >
-        <div style={{ fontSize: 16, fontWeight: 600, color: '#1C1B18' }}>
-          {isEdit ? 'Edit payment' : 'Add payment'}
+        <div>
+          <div style={{ fontSize: 16, fontWeight: 600, color: '#1C1B18' }}>
+            {isEdit ? 'Edit payment' : 'Add payment'}
+          </div>
+          <div style={{ fontSize: 12, color: '#9B9890', marginTop: 2 }}>
+            Record a payment against this expense
+          </div>
         </div>
         <button
           type="button"
           onClick={onClose}
           style={{
-            width: 28, height: 28,
+            width: 30, height: 30,
             border: '1px solid #E8E6E0',
-            borderRadius: 6, background: 'white',
+            borderRadius: 7, background: 'white',
             cursor: 'pointer', display: 'flex',
             alignItems: 'center', justifyContent: 'center',
+            flexShrink: 0,
           }}
         >
           <IconX size={14} color="#595650" />
@@ -202,24 +265,46 @@ export function PaymentPanel({ expense, payment, onClose }: Props) {
       {/* Context bar */}
       <div
         style={{
-          padding: '10px 24px',
+          padding: '10px 28px',
           background: '#FAFAF8',
           borderBottom: '1px solid #F0EDE6',
           flexShrink: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 12,
         }}
       >
-        <span style={{ fontSize: 13, fontWeight: 500, color: '#1C1B18' }}>{expense.name}</span>
-        <span style={{ fontSize: 12, color: '#9B9890' }}>{vendorLine} · Balance: </span>
-        <span style={{ fontSize: 13, fontWeight: 600, fontVariantNumeric: 'tabular-nums', color: noAmount ? '#9B9890' : '#C43C3C' }}>
-          {noAmount ? '—' : balance > 0 ? fCurrencyFull(balance, baseCurrency) : 'Fully paid'}
-        </span>
+        <div>
+          <span style={{ fontSize: 13, fontWeight: 500, color: '#1C1B18' }}>{expense.name}</span>
+          {vendorLine && <span style={{ fontSize: 12, color: '#9B9890' }}>{vendorLine}</span>}
+        </div>
+        {!noAmount && (
+          <span style={{
+            background: balance > 0 ? '#FDF0F0' : '#EEF5F1',
+            color: balance > 0 ? '#C43C3C' : '#2A5C41',
+            borderRadius: 100,
+            padding: '3px 10px',
+            fontSize: 12,
+            fontWeight: 600,
+            fontVariantNumeric: 'tabular-nums',
+            flexShrink: 0,
+          }}>
+            {balance > 0 ? fCurrencyFull(balance, baseCurrency) : 'Fully paid'}
+          </span>
+        )}
       </div>
 
       {/* Form body */}
       <form
         onSubmit={handleSubmit(onSubmit)}
-        style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 14, flex: 1 }}
+        style={{ padding: '20px 28px', display: 'flex', flexDirection: 'column', gap: 14 }}
       >
+
+        {/* PAYMENT section */}
+        <div style={{ fontSize: 10, fontWeight: 600, color: '#9B9890', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+          Payment
+        </div>
 
         {/* Payment type + Date */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
@@ -247,6 +332,11 @@ export function PaymentPanel({ expense, payment, onClose }: Props) {
           </div>
         </div>
 
+        {/* WHERE THE MONEY CAME FROM section */}
+        <div style={{ fontSize: 10, fontWeight: 600, color: '#9B9890', textTransform: 'uppercase', letterSpacing: '0.07em', marginTop: 4 }}>
+          Where the money came from
+        </div>
+
         {/* Source wallet */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
           <label style={labelStyle}>Source wallet</label>
@@ -259,12 +349,7 @@ export function PaymentPanel({ expense, payment, onClose }: Props) {
                 value={field.value ?? ''}
                 onChange={field.onChange}
                 placeholder="Select wallet…"
-                options={wallets.map(w => ({
-                  value: w.id,
-                  label: w.currency_code === baseCurrency
-                    ? `${w.currency_code} (base)`
-                    : w.currency_code,
-                }))}
+                options={walletOptions}
               />
             )}
           />
@@ -282,8 +367,8 @@ export function PaymentPanel({ expense, payment, onClose }: Props) {
           />
         </div>
 
-        {/* Currency conversion — foreign wallets only */}
-        {isForeign && (
+        {/* Currency conversion */}
+        {isForeign ? (
           <div
             style={{
               background: '#FFFBF3',
@@ -299,7 +384,7 @@ export function PaymentPanel({ expense, payment, onClose }: Props) {
                 color: '#B87820',
                 textTransform: 'uppercase',
                 letterSpacing: '0.07em',
-                marginBottom: 12,
+                marginBottom: 8,
                 display: 'flex',
                 alignItems: 'center',
                 gap: 5,
@@ -308,6 +393,9 @@ export function PaymentPanel({ expense, payment, onClose }: Props) {
               <IconExchange size={13} />
               Currency conversion
             </div>
+            <p style={{ fontSize: 12, color: '#B87820', margin: '0 0 12px' }}>
+              Enter the exact rate from your app at the time of payment — it's locked to this record forever.
+            </p>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
@@ -327,14 +415,20 @@ export function PaymentPanel({ expense, payment, onClose }: Props) {
                 <label style={{ fontSize: 10, fontWeight: 600, color: '#595650', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   Exchange rate
                 </label>
-                <input
-                  type="number"
-                  placeholder="e.g. 1520"
-                  value={exchangeRate}
-                  onChange={e => setExchangeRate(e.target.value)}
-                  style={subInputStyle}
-                />
-                <span style={{ fontSize: 10, color: '#9B9890' }}>Exact rate from your app</span>
+                {isRateFetching ? (
+                  <div className="animate-pulse" style={{ height: 34, borderRadius: 6, background: '#EDD9A3' }} />
+                ) : (
+                  <input
+                    type="number"
+                    placeholder="0.000000"
+                    value={exchangeRate}
+                    onChange={e => setExchangeRate(e.target.value)}
+                    style={subInputStyle}
+                  />
+                )}
+                <span style={{ fontSize: 10, color: '#9B9890' }}>
+                  {isRateFetching ? 'Fetching live rate…' : 'Live rate pre-filled — edit to your exact app rate'}
+                </span>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
@@ -355,6 +449,12 @@ export function PaymentPanel({ expense, payment, onClose }: Props) {
               </div>
             </div>
           </div>
+        ) : (
+          selectedCurrencyId && (
+            <div style={{ fontSize: 12, fontStyle: 'italic', color: '#9B9890' }}>
+              Not applicable — payment made directly in base currency
+            </div>
+          )
         )}
 
         {/* Notes */}
@@ -364,7 +464,7 @@ export function PaymentPanel({ expense, payment, onClose }: Props) {
         </div>
 
         {/* Footer */}
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 'auto' }}>
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', paddingTop: 4, paddingBottom: 8 }}>
           <button
             type="button"
             onClick={onClose}

@@ -1,8 +1,8 @@
 import { instance } from '@/services/axios'
 import * as api from '@/services/api'
 
-export const fetchCurrencies = () => 
-    instance.get(api.CURRENCIES).then(r => r.data.data);
+export const fetchCurrencies = (params?: { client_id?: string }) =>
+    instance.get(api.CURRENCIES, { params }).then(r => r.data.data);
 
 export const addCurrency = (data: { currency_code: string }) =>
     instance.post(api.CURRENCIES, data).then(r => r.data.data);

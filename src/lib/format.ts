@@ -18,18 +18,24 @@ function getMeta(currency = 'NGN') {
 }
 
 export function fCurrency(n: number | string | null | undefined, currency = 'NGN'): string {
-  const { symbol } = getMeta(currency)
+  const { symbol, locale } = getMeta(currency)
   const num = Number(n)
   if (!num) return '—'
-  if (num >= 1_000_000) return `${symbol}${(num / 1_000_000).toFixed(1)}M`
-  if (num >= 1_000)     return `${symbol}${(num / 1_000).toFixed(0)}k`
-  return `${symbol}${num.toLocaleString()}`
+  if (num >= 1_000_000) return `${symbol}${parseFloat((num / 1_000_000).toFixed(2))}M`
+  if (num >= 1_000)     return `${symbol}${parseFloat((num / 1_000).toFixed(1))}K`
+  return `${symbol}${num.toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`
 }
 
 export function fCurrencyFull(n: number | string | null | undefined, currency = 'NGN'): string {
   const { symbol, locale } = getMeta(currency)
   const num = Number(n)
-  return `${symbol}${num.toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
+  return `${symbol}${num.toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`
+}
+
+export function fRate(n: number | string | null | undefined): string {
+  const num = Number(n)
+  if (!num) return '—'
+  return num.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 6 })
 }
 
 export function pct(paid: number | string, actual: number | string): number {

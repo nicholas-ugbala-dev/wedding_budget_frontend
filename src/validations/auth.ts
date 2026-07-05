@@ -14,10 +14,7 @@ export const registerSchema = z.object({
 });
 
 export const onboard1Schema = z.object({
-  event_name:       z.string().min(1, 'Event name is required'),
-  event_date:       z.string().min(1, 'Event date is required'),
-  wedding_location: z.string().min(1, 'Location is required'),
-  base_currency:    z.string().length(3, 'Select a currency'),
+  base_currency: z.string().length(3, 'Select a currency'),
 });
 
 export const forgotSchema = z.object({

@@ -1,9 +1,9 @@
 import { fCurrency } from '@/lib/format'
 
-interface BarItem { category: string; actual_amount: string; total_paid: string }
-interface Props { data: BarItem[]; currency: string; isLoading: boolean }
+interface BarItem { category: string; actual_amount: string; planned_amount: string; total_paid: string }
+interface Props { data: BarItem[]; currency: string; rate?: number; isLoading: boolean }
 
-export function SpendingChart({ data, currency, isLoading }: Props) {
+export function SpendingChart({ data, currency, rate = 1, isLoading }: Props) {
   const top5 = [...data]
     .sort((a, b) => Number(b.actual_amount) - Number(a.actual_amount))
     .slice(0, 5)
@@ -11,7 +11,7 @@ export function SpendingChart({ data, currency, isLoading }: Props) {
 
   return (
     <div className="bg-surface border border-border rounded-[10px] px-5 py-[18px]">
-      <div className="text-[13px] font-medium text-text-primary mb-4">Budget vs actual — top items</div>
+      <div className="text-[13px] font-medium text-text-primary mb-4">Cost vs Paid — top items</div>
 
       {isLoading ? (
         <div className="text-[13px] text-text-muted">Loading...</div>
@@ -23,9 +23,10 @@ export function SpendingChart({ data, currency, isLoading }: Props) {
             {top5.map(item => {
               const actual = Number(item.actual_amount)
               const paid   = Number(item.total_paid)
-              // both percentages are relative to the same max — keeps bars on the same scale
-              const budgetPct = (actual / maxActual) * 100
+              // percentages use raw values (same ratio regardless of conversion rate)
+              const costPct = (actual / maxActual) * 100
               const paidPct   = (paid   / maxActual) * 100
+              const displayAmount = rate !== 1 ? Math.round(actual * rate) : actual
 
               return (
                 <div
@@ -53,13 +54,13 @@ export function SpendingChart({ data, currency, isLoading }: Props) {
                     {/* Paid bar (10px tall, dark, bottom-aligned) */}
                     <div
                       className="absolute bottom-0 left-0"
-                      style={{ width: `${budgetPct}%`, height: 10, background: '#1C1B18', borderRadius: 2 }}
+                      style={{ width: `${costPct}%`, height: 10, background: '#1C1B18', borderRadius: 2 }}
                     />
                   </div>
 
                   {/* Amount */}
                   <div className="text-[11px] text-text-muted tabular-nums">
-                    {fCurrency(actual, currency)}
+                    {(rate !== 1 ? '~' : '') + fCurrency(displayAmount, currency)}
                   </div>
                 </div>
               )

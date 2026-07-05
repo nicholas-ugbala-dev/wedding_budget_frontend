@@ -11,20 +11,37 @@ import {
     PAYMENT_SUMMARY_KEY,
     PAYMENT_TYPES_KEY,
 } from '@/store/queryKeys';
+import { useGetMe } from '@/store/queries/useAuth';
+import { useClientStore } from '@/store/useClientStore';
 
+export const useGetPayments = (params: Record<string, unknown>) => {
+    const { data: user } = useGetMe();
+    const { activeClient } = useClientStore();
+    const isPlanner = user?.account_type === 'planner';
+    const clientId = isPlanner ? activeClient?.id : undefined;
+    const scopedParams = clientId ? { ...params, client_id: clientId } : params;
 
-
-export const useGetPayments = (params: Record<string, unknown>) =>
-    useQuery<PaginatedResult<PaymentListItem>>({
-        queryKey: [PAYMENTS_KEY],
-        queryFn: () => fetchPayments(params),
+    return useQuery<PaginatedResult<PaymentListItem>>({
+        queryKey: [PAYMENTS_KEY, scopedParams],
+        queryFn: () => fetchPayments(scopedParams),
     });
+};
 
-export const useGetPaymentSummary = (eventId?: string) =>
-    useQuery<PaymentSummary>({
-        queryKey: [PAYMENT_SUMMARY_KEY, eventId],
-        queryFn: () => fetchPaymentSummary(eventId ? { event_id: eventId } : undefined),
+export const useGetPaymentSummary = (eventId?: string) => {
+    const { data: user } = useGetMe();
+    const { activeClient } = useClientStore();
+    const isPlanner = user?.account_type === 'planner';
+    const clientId = isPlanner ? activeClient?.id : undefined;
+
+    const params: Record<string, string> = {};
+    if (eventId) params.event_id = eventId;
+    if (clientId) params.client_id = clientId;
+
+    return useQuery<PaymentSummary>({
+        queryKey: [PAYMENT_SUMMARY_KEY, eventId, clientId],
+        queryFn: () => fetchPaymentSummary(Object.keys(params).length ? params : undefined),
     });
+};
 
 export const useGetPaymentTypes = () =>
     useQuery({

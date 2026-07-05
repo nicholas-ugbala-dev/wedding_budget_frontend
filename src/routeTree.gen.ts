@@ -17,9 +17,13 @@ import { Route as AppRouteRouteImport } from './routes/_app/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as OnboardingStep2RouteImport } from './routes/onboarding/step-2'
 import { Route as OnboardingStep1RouteImport } from './routes/onboarding/step-1'
+import { Route as OnboardingPlannerStep2RouteImport } from './routes/onboarding/planner-step-2'
+import { Route as OnboardingPlannerStep1RouteImport } from './routes/onboarding/planner-step-1'
 import { Route as AppSettingsRouteImport } from './routes/_app/settings'
 import { Route as AppPaymentsRouteImport } from './routes/_app/payments'
 import { Route as AppOverviewRouteImport } from './routes/_app/overview'
+import { Route as AppEventsRouteImport } from './routes/_app/events'
+import { Route as AppClientsRouteImport } from './routes/_app/clients'
 import { Route as AppExpensesIndexRouteImport } from './routes/_app/expenses/index'
 import { Route as AppExpensesExpenseIdRouteImport } from './routes/_app/expenses/$expenseId'
 
@@ -62,6 +66,16 @@ const OnboardingStep1Route = OnboardingStep1RouteImport.update({
   path: '/onboarding/step-1',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OnboardingPlannerStep2Route = OnboardingPlannerStep2RouteImport.update({
+  id: '/onboarding/planner-step-2',
+  path: '/onboarding/planner-step-2',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OnboardingPlannerStep1Route = OnboardingPlannerStep1RouteImport.update({
+  id: '/onboarding/planner-step-1',
+  path: '/onboarding/planner-step-1',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppSettingsRoute = AppSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -75,6 +89,16 @@ const AppPaymentsRoute = AppPaymentsRouteImport.update({
 const AppOverviewRoute = AppOverviewRouteImport.update({
   id: '/overview',
   path: '/overview',
+  getParentRoute: () => AppRouteRoute,
+} as any)
+const AppEventsRoute = AppEventsRouteImport.update({
+  id: '/events',
+  path: '/events',
+  getParentRoute: () => AppRouteRoute,
+} as any)
+const AppClientsRoute = AppClientsRouteImport.update({
+  id: '/clients',
+  path: '/clients',
   getParentRoute: () => AppRouteRoute,
 } as any)
 const AppExpensesIndexRoute = AppExpensesIndexRouteImport.update({
@@ -94,9 +118,13 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/clients': typeof AppClientsRoute
+  '/events': typeof AppEventsRoute
   '/overview': typeof AppOverviewRoute
   '/payments': typeof AppPaymentsRoute
   '/settings': typeof AppSettingsRoute
+  '/onboarding/planner-step-1': typeof OnboardingPlannerStep1Route
+  '/onboarding/planner-step-2': typeof OnboardingPlannerStep2Route
   '/onboarding/step-1': typeof OnboardingStep1Route
   '/onboarding/step-2': typeof OnboardingStep2Route
   '/expenses/$expenseId': typeof AppExpensesExpenseIdRoute
@@ -108,9 +136,13 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/clients': typeof AppClientsRoute
+  '/events': typeof AppEventsRoute
   '/overview': typeof AppOverviewRoute
   '/payments': typeof AppPaymentsRoute
   '/settings': typeof AppSettingsRoute
+  '/onboarding/planner-step-1': typeof OnboardingPlannerStep1Route
+  '/onboarding/planner-step-2': typeof OnboardingPlannerStep2Route
   '/onboarding/step-1': typeof OnboardingStep1Route
   '/onboarding/step-2': typeof OnboardingStep2Route
   '/expenses/$expenseId': typeof AppExpensesExpenseIdRoute
@@ -124,9 +156,13 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/_app/clients': typeof AppClientsRoute
+  '/_app/events': typeof AppEventsRoute
   '/_app/overview': typeof AppOverviewRoute
   '/_app/payments': typeof AppPaymentsRoute
   '/_app/settings': typeof AppSettingsRoute
+  '/onboarding/planner-step-1': typeof OnboardingPlannerStep1Route
+  '/onboarding/planner-step-2': typeof OnboardingPlannerStep2Route
   '/onboarding/step-1': typeof OnboardingStep1Route
   '/onboarding/step-2': typeof OnboardingStep2Route
   '/_app/expenses/$expenseId': typeof AppExpensesExpenseIdRoute
@@ -140,9 +176,13 @@ export interface FileRouteTypes {
     | '/login'
     | '/register'
     | '/reset-password'
+    | '/clients'
+    | '/events'
     | '/overview'
     | '/payments'
     | '/settings'
+    | '/onboarding/planner-step-1'
+    | '/onboarding/planner-step-2'
     | '/onboarding/step-1'
     | '/onboarding/step-2'
     | '/expenses/$expenseId'
@@ -154,9 +194,13 @@ export interface FileRouteTypes {
     | '/login'
     | '/register'
     | '/reset-password'
+    | '/clients'
+    | '/events'
     | '/overview'
     | '/payments'
     | '/settings'
+    | '/onboarding/planner-step-1'
+    | '/onboarding/planner-step-2'
     | '/onboarding/step-1'
     | '/onboarding/step-2'
     | '/expenses/$expenseId'
@@ -169,9 +213,13 @@ export interface FileRouteTypes {
     | '/login'
     | '/register'
     | '/reset-password'
+    | '/_app/clients'
+    | '/_app/events'
     | '/_app/overview'
     | '/_app/payments'
     | '/_app/settings'
+    | '/onboarding/planner-step-1'
+    | '/onboarding/planner-step-2'
     | '/onboarding/step-1'
     | '/onboarding/step-2'
     | '/_app/expenses/$expenseId'
@@ -185,6 +233,8 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   RegisterRoute: typeof RegisterRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  OnboardingPlannerStep1Route: typeof OnboardingPlannerStep1Route
+  OnboardingPlannerStep2Route: typeof OnboardingPlannerStep2Route
   OnboardingStep1Route: typeof OnboardingStep1Route
   OnboardingStep2Route: typeof OnboardingStep2Route
 }
@@ -247,6 +297,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OnboardingStep1RouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/onboarding/planner-step-2': {
+      id: '/onboarding/planner-step-2'
+      path: '/onboarding/planner-step-2'
+      fullPath: '/onboarding/planner-step-2'
+      preLoaderRoute: typeof OnboardingPlannerStep2RouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/onboarding/planner-step-1': {
+      id: '/onboarding/planner-step-1'
+      path: '/onboarding/planner-step-1'
+      fullPath: '/onboarding/planner-step-1'
+      preLoaderRoute: typeof OnboardingPlannerStep1RouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_app/settings': {
       id: '/_app/settings'
       path: '/settings'
@@ -268,6 +332,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppOverviewRouteImport
       parentRoute: typeof AppRouteRoute
     }
+    '/_app/events': {
+      id: '/_app/events'
+      path: '/events'
+      fullPath: '/events'
+      preLoaderRoute: typeof AppEventsRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/_app/clients': {
+      id: '/_app/clients'
+      path: '/clients'
+      fullPath: '/clients'
+      preLoaderRoute: typeof AppClientsRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
     '/_app/expenses/': {
       id: '/_app/expenses/'
       path: '/expenses'
@@ -286,6 +364,8 @@ declare module '@tanstack/react-router' {
 }
 
 interface AppRouteRouteChildren {
+  AppClientsRoute: typeof AppClientsRoute
+  AppEventsRoute: typeof AppEventsRoute
   AppOverviewRoute: typeof AppOverviewRoute
   AppPaymentsRoute: typeof AppPaymentsRoute
   AppSettingsRoute: typeof AppSettingsRoute
@@ -294,6 +374,8 @@ interface AppRouteRouteChildren {
 }
 
 const AppRouteRouteChildren: AppRouteRouteChildren = {
+  AppClientsRoute: AppClientsRoute,
+  AppEventsRoute: AppEventsRoute,
   AppOverviewRoute: AppOverviewRoute,
   AppPaymentsRoute: AppPaymentsRoute,
   AppSettingsRoute: AppSettingsRoute,
@@ -312,6 +394,8 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   RegisterRoute: RegisterRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  OnboardingPlannerStep1Route: OnboardingPlannerStep1Route,
+  OnboardingPlannerStep2Route: OnboardingPlannerStep2Route,
   OnboardingStep1Route: OnboardingStep1Route,
   OnboardingStep2Route: OnboardingStep2Route,
 }

@@ -6,9 +6,9 @@ interface ProgressItem {
   expense_id: string; name: string
   actual_amount: string; total_paid: string; balance: string; pct: string
 }
-interface Props { data: ProgressItem[]; currency: string; isLoading: boolean }
+interface Props { data: ProgressItem[]; currency: string; rate?: number; isLoading: boolean }
 
-export function PaymentProgress({ data, currency, isLoading }: Props) {
+export function PaymentProgress({ data, currency, rate = 1, isLoading }: Props) {
   const navigate = useNavigate()
 
   return (
@@ -22,11 +22,12 @@ export function PaymentProgress({ data, currency, isLoading }: Props) {
       ) : (
         <div className="flex flex-col gap-2 overflow-y-auto" style={{ maxHeight: 260 }}>
           {data.map(item => {
-            const noAmount     = !item.actual_amount || Number(item.actual_amount) === 0
-            const p            = Math.min(Number(item.pct), 100)
-            const balance      = Number(item.balance)
-            const color        = progressColor(p)
-            const balanceColor = noAmount ? '#9B9890' : balance <= 0 ? '#3A7A5A' : '#C43C3C'
+            const noAmount      = !item.actual_amount || Number(item.actual_amount) === 0
+            const p             = Math.min(Number(item.pct), 100)
+            const balance       = Number(item.balance)
+            const displayBalance = rate !== 1 ? Math.round(balance * rate) : balance
+            const color         = progressColor(p)
+            const balanceColor  = noAmount ? '#9B9890' : balance <= 0 ? '#3A7A5A' : '#C43C3C'
 
             return (
               <div
@@ -50,7 +51,7 @@ export function PaymentProgress({ data, currency, isLoading }: Props) {
 
                 {/* Balance */}
                 <div className="text-[10px] text-right tabular-nums" style={{ color: balanceColor }}>
-                  {noAmount ? '—' : balance <= 0 ? 'Paid' : fCurrency(balance, currency)}
+                  {noAmount ? '—' : balance <= 0 ? 'Paid' : (rate !== 1 ? '~' : '') + fCurrency(displayBalance, currency)}
                 </div>
               </div>
             )

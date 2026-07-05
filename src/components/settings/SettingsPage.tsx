@@ -1,19 +1,20 @@
 import { useState } from 'react'
-import { IconUser, IconCalendarEvent, IconWallet } from '@tabler/icons-react'
+import { IconUser, IconWallet } from '@tabler/icons-react'
 import { AccountTab } from './AccountTab'
-import { EventsTab } from './EventsTab'
 import { CurrenciesTab } from './CurrenciesTab'
+import { useGetMe } from '@/store/queries/useAuth'
 
-type Tab = 'account' | 'events' | 'currencies'
-
-const TABS = [
-  { id: 'account' as Tab,  label: 'Account',    Icon: IconUser },
-  { id: 'events' as Tab,   label: 'Events',     Icon: IconCalendarEvent },
-  { id: 'currencies' as Tab, label: 'Currencies', Icon: IconWallet },
-]
+type Tab = 'account' | 'currencies'
 
 export function SettingsPage() {
-  const [tab, setTab] = useState<Tab>('account')
+  const { data: user }  = useGetMe()
+  const isPlanner       = user?.account_type === 'planner'
+  const [tab, setTab]   = useState<Tab>('account')
+
+  const tabs = [
+    { id: 'account' as Tab,    label: 'Account',    Icon: IconUser },
+    ...(!isPlanner ? [{ id: 'currencies' as Tab, label: 'Currencies', Icon: IconWallet }] : []),
+  ]
 
   return (
     <div className="px-8 py-7 flex flex-col gap-5">
@@ -24,7 +25,7 @@ export function SettingsPage() {
 
         {/* Left tab nav */}
         <div className="flex flex-col gap-1 shrink-0" style={{ width: 160 }}>
-          {TABS.map(({ id, label, Icon }) => {
+          {tabs.map(({ id, label, Icon }) => {
             const active = tab === id
             return (
               <button
@@ -53,8 +54,7 @@ export function SettingsPage() {
         {/* Right content card */}
         <div className="flex-1 bg-surface border border-border rounded-[10px]" style={{ padding: '24px 28px' }}>
           {tab === 'account'    && <AccountTab />}
-          {tab === 'events'     && <EventsTab />}
-          {tab === 'currencies' && <CurrenciesTab />}
+          {tab === 'currencies' && !isPlanner && <CurrenciesTab />}
         </div>
 
       </div>
