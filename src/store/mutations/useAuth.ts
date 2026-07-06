@@ -42,7 +42,7 @@ export const useOnboard1 = () => {
     const qc = useQueryClient();
     return useMutation({
         mutationFn: onboard1Request,
-        onSuccess: () => qc.invalidateQueries({ queryKey: [ME_KEY] }),
+        onSuccess: () => qc.refetchQueries({ queryKey: [ME_KEY] }),
         onError: (err: ApiError) =>
             toast.error(err.response?.data?.message ?? "Something went wrong"),
     });
