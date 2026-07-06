@@ -38,12 +38,15 @@ export const useRegister = () => {
     });
 };
 
-export const useOnboard1 = () =>
-    useMutation({
+export const useOnboard1 = () => {
+    const qc = useQueryClient();
+    return useMutation({
         mutationFn: onboard1Request,
+        onSuccess: () => qc.invalidateQueries({ queryKey: [ME_KEY] }),
         onError: (err: ApiError) =>
             toast.error(err.response?.data?.message ?? "Something went wrong"),
     });
+};
 
 export const useOnboardEvents = () =>
   useMutation({
