@@ -47,7 +47,7 @@ export function OnboardingPlannerStep1() {
 
   const onContinue = async () => {
     if (pills.length === 0) {
-      toast.error('Add at least one client')
+      navigate({ to: '/onboarding/planner-step-2' })
       return
     }
     setIsPending(true)
@@ -162,7 +162,7 @@ export function OnboardingPlannerStep1() {
           <button
             type="button"
             onClick={onContinue}
-            disabled={isPending || pills.length === 0}
+            disabled={isPending}
             className="h-10 bg-text-primary text-white border-none rounded-[7px] text-[13px] font-medium w-full cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isPending ? 'Saving…' : 'Continue →'}

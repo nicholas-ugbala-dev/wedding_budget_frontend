@@ -5,11 +5,11 @@ import { useCreateEvent } from '@/store/mutations/useEvents'
 import { useGetClients } from '@/store/queries/useClients'
 import { EVENT_PRESETS, CURRENCY_OPTIONS } from '@/lib/onboarding'
 import { AppSelect } from '@/components/ui/AppSelect'
-import type { Client } from '@/types/client'
 
 export function OnboardingPlannerStep2() {
   const navigate = useNavigate()
-  const { data: clients = [] } = useGetClients()
+  const { data } = useGetClients()
+  const clients = data?.items ?? []
   const { mutateAsync: createEvent, isPending } = useCreateEvent()
 
   const [selectedClientId, setSelectedClientId] = useState('')
@@ -20,19 +20,20 @@ export function OnboardingPlannerStep2() {
   const [vendorCurrency, setVendorCurrency] = useState('')
   const [budget, setBudget] = useState('')
 
-  const selectedClient = (clients as Client[]).find(c => c.id === selectedClientId)
+  const selectedClient = clients.find(c => c.id === selectedClientId)
 
   const onFinish = async () => {
-    if (!name.trim()) return
-    await createEvent({
-      name: name.trim(),
-      event_type: eventType || undefined,
-      date: date || undefined,
-      location: location || undefined,
-      vendor_currency: vendorCurrency || undefined,
-      budget: budget ? parseInt(budget, 10) : undefined,
-      client_id: selectedClientId || undefined,
-    })
+    if (name.trim()) {
+      await createEvent({
+        name: name.trim(),
+        event_type: eventType || undefined,
+        date: date || undefined,
+        location: location || undefined,
+        vendor_currency: vendorCurrency || undefined,
+        budget: budget ? parseInt(budget, 10) : undefined,
+        client_id: selectedClientId || undefined,
+      })
+    }
     navigate({ to: '/clients' })
   }
 
@@ -59,7 +60,7 @@ export function OnboardingPlannerStep2() {
           <div className="flex flex-col gap-1.5">
             <label className="text-[11px] font-medium text-text-secondary uppercase tracking-[0.05em]">Client</label>
             <div className="flex flex-wrap gap-[7px]">
-              {(clients as Client[]).map(c => {
+              {clients.map(c => {
                 const active = c.id === selectedClientId
                 return (
                   <button
@@ -176,7 +177,7 @@ export function OnboardingPlannerStep2() {
           <button
             type="button"
             onClick={onFinish}
-            disabled={isPending || !name.trim()}
+            disabled={isPending}
             className="h-10 bg-text-primary text-white border-none rounded-[7px] text-[13px] font-medium w-full cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isPending ? 'Setting up…' : 'Go to clients →'}
