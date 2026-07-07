@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { EVENTS_KEY } from '@/store/queryKeys';
+import { EVENTS_KEY, CURRENCIES_KEY } from '@/store/queryKeys';
 import { toast } from 'sonner';
 import type { ApiError } from '@/types/api';
 import {
@@ -14,6 +14,7 @@ export const useCreateEvent = () => {
     mutationFn: createEvent,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: [EVENTS_KEY] });
+      qc.invalidateQueries({ queryKey: [CURRENCIES_KEY] });
       toast.success('Event added');
     },
     onError: (err: ApiError) =>
@@ -27,6 +28,7 @@ export const useUpdateEvent = () => {
     mutationFn: updateEvent,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: [EVENTS_KEY] });
+      qc.invalidateQueries({ queryKey: [CURRENCIES_KEY] });
       toast.success('Event updated');
     },
     onError: (err: ApiError) =>
