@@ -12,6 +12,7 @@ import type { Payment } from '@/types/payment'
 interface UserCurrency {
   id: string
   currency_code: string
+  is_base?: boolean
 }
 
 interface ClientCurrency {
@@ -87,7 +88,7 @@ export function PaymentPanel({ expense, payment, onClose }: Props) {
   // For couples: currencies come back as UserCurrency[] (id = UUID)
   const wallets = currencies as (UserCurrency | ClientCurrency)[]
 
-  const { register, handleSubmit, watch, control, reset } = useForm<FormData>({
+  const { register, handleSubmit, watch, control, reset, setValue } = useForm<FormData>({
     defaultValues: {
       payment_type: 'deposit',
       payment_date: today(),
@@ -99,7 +100,8 @@ export function PaymentPanel({ expense, payment, onClose }: Props) {
   const [isRateFetching, setIsRateFetching] = useState(false)
   // Set to true by the edit pre-fill effect before calling reset(),
   // so the currency effect knows to skip the change triggered by reset().
-  const editPreFillPending = useRef(false)
+  const editPreFillPending  = useRef(false)
+  const defaultWalletSeeded = useRef(false)
 
   useEffect(() => {
     if (payment) {
@@ -114,6 +116,16 @@ export function PaymentPanel({ expense, payment, onClose }: Props) {
       setExchangeRate(payment.exchange_rate ? String(payment.exchange_rate) : '')
     }
   }, [payment, reset, isPlanner])
+
+  // For new couple payments: auto-select the base wallet once currencies load
+  useEffect(() => {
+    if (isEdit || isPlanner || defaultWalletSeeded.current) return
+    const base = (wallets as UserCurrency[]).find(w => w.is_base)
+    if (base) {
+      defaultWalletSeeded.current = true
+      setValue('wallet_currency_id', base.id)
+    }
+  }, [currencies, isEdit, isPlanner])
 
   const selectedCurrencyId = watch('wallet_currency_id')
 
@@ -208,9 +220,7 @@ export function PaymentPanel({ expense, payment, onClose }: Props) {
   // Build select options — same shape for both flows since planner uses code as id
   const walletOptions = wallets.map(w => ({
     value: w.id,
-    label: w.currency_code === baseCurrency
-      ? `${w.currency_code} (base)`
-      : w.currency_code,
+    label: w.is_base ? `${w.currency_code} (base)` : w.currency_code,
   }))
 
   return (

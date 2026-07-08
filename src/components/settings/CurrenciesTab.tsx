@@ -9,6 +9,7 @@ import { CURRENCY_META } from '@/lib/format'
 interface UserCurrency {
   id?: string
   currency_code: string
+  is_base?: boolean
 }
 
 export function CurrenciesTab() {
@@ -23,7 +24,7 @@ export function CurrenciesTab() {
   const baseCurrency = user?.base_currency ?? 'NGN'
   const list         = currencies as UserCurrency[]
   const activeCodes  = new Set(list.map(c => c.currency_code))
-  const foreign      = list.filter(c => c.currency_code !== baseCurrency)
+  const foreign      = list.filter(c => !c.is_base)
 
   const available = Object.entries(CURRENCY_META)
     .filter(([code]) => !activeCodes.has(code))
