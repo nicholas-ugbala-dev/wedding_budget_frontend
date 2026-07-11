@@ -1,6 +1,6 @@
 import { instance } from '@/services/axios';
 import * as api from '@/services/api';
-import type { CreateExpenseInput } from '@/validations/expense';
+import type { CreateExpenseInput, UpdateExpenseInput } from '@/validations/expense';
 import type { Expense } from '@/types/expense';
 
 export const fetchExpenses = (params: Record<string, unknown>) =>
@@ -12,7 +12,7 @@ export const fetchExpenseById = (id: string) =>
 export const createExpense = (data: CreateExpenseInput): Promise<Expense> =>
     instance.post(api.EXPENSES, data).then(r => r.data.data);
 
-export const updateExpense = ({ id, ...data }: { id: string } & Partial<CreateExpenseInput>) =>
+export const updateExpense = ({ id, ...data }: { id: string } & UpdateExpenseInput) =>
     instance.patch(api.EXPENSE_BY_ID(id), data).then(r => r.data.data);
 
 export const deleteExpense = (id: string) =>

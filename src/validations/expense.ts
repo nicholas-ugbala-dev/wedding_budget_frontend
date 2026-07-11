@@ -19,3 +19,9 @@ export const createExpenseSchema = z.object({
 });
 
 export type CreateExpenseInput = z.infer<typeof createExpenseSchema>;
+
+export const updateExpenseSchema = createExpenseSchema.partial().extend({
+  vendor_id: z.uuid().nullable().optional(),
+});
+
+export type UpdateExpenseInput = z.infer<typeof updateExpenseSchema>;

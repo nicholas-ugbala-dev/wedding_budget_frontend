@@ -1,16 +1,20 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { IconX } from '@tabler/icons-react'
 import { useGetEvents } from '@/store/queries/useEvents'
 import { useBaseCurrency } from '@/store/queries/useBaseCurrency'
 import { useGetCurrencies } from '@/store/queries/useCurrencies'
+import { useGetVendors } from '@/store/queries/useVendors'
 import { useCreateExpense } from '@/store/mutations/useExpenses'
 import { useUpdateExpense } from '@/store/mutations/useExpenses'
 import { CategoryCombobox } from './CategoryCombobox'
+import { VendorCombobox } from './VendorCombobox'
 import { AppSelect } from '@/components/ui/AppSelect'
 import type { CategoryValue } from './CategoryCombobox'
+import type { VendorValue } from './VendorCombobox'
 import type { CreateExpenseInput } from '@/validations/expense'
 import type { Expense } from '@/types/expense'
+import type { Vendor } from '@/types/vendor'
 import type { Event } from '@/types/event'
 
 interface Props {
@@ -22,9 +26,6 @@ type FormData = {
   name: string
   event_id: string
   base_currency: string
-  vendor_name: string
-  vendor_phone: string
-  vendor_email: string
   actual_amount: string
   refundable_amount: string
   notes: string
@@ -54,13 +55,15 @@ const inputStyle: React.CSSProperties = {
 }
 
 export function ExpensePanel({ expense, onClose }: Props) {
-  const { data: events = [] }  = useGetEvents()
-  const { data: wallets = [] } = useGetCurrencies()
-  const createExpense           = useCreateExpense()
-  const updateExpense           = useUpdateExpense()
+  const { data: events = [] }      = useGetEvents()
+  const { data: wallets = [] }     = useGetCurrencies()
+  const { data: vendorList = [] }  = useGetVendors()
+  const createExpense               = useCreateExpense()
+  const updateExpense               = useUpdateExpense()
 
-  const isEdit    = !!expense
-  const isPending = createExpense.isPending || updateExpense.isPending
+  const isEdit         = !!expense
+  const isPending      = createExpense.isPending || updateExpense.isPending
+  const isAmountLocked = isEdit && Number(expense?.total_paid ?? 0) > 0
   const fallbackCurrency = useBaseCurrency()
 
   const [category, setCategory] = useState<CategoryValue>(() => ({
@@ -68,14 +71,23 @@ export function ExpensePanel({ expense, onClose }: Props) {
     name: expense?.category_name ?? '',
   }))
 
+  const [vendor, setVendor] = useState<VendorValue>(() => ({
+    id:    expense?.vendor_id   ?? undefined,
+    name:  expense?.vendor_name ?? '',
+    phone: '',
+    email: '',
+  }))
+
+  // Keep a ref to the latest vendor list so the expense-change effect can read it
+  // without needing to re-run every time vendors refetch in the background
+  const vendorListRef = useRef(vendorList)
+  vendorListRef.current = vendorList
+
   const { register, handleSubmit, reset, control, watch, setValue } = useForm<FormData>({
     defaultValues: expense ? {
       name:               expense.name,
       event_id:           expense.event_id,
       base_currency:      expense.base_currency,
-      vendor_name:        expense.vendor_name ?? '',
-      vendor_phone:       '',
-      vendor_email:       '',
       actual_amount:      expense.actual_amount != null ? String(expense.actual_amount) : '',
       refundable_amount:  expense.refundable_amount != null ? String(expense.refundable_amount) : '',
       notes:              expense.notes ?? '',
@@ -83,19 +95,33 @@ export function ExpensePanel({ expense, onClose }: Props) {
     } : undefined,
   })
 
+  // Sync form + category + vendor when the expense being edited changes
   useEffect(() => {
-    if (expense) reset({
-      name:               expense.name,
-      event_id:           expense.event_id,
-      base_currency:      expense.base_currency,
-      vendor_name:        expense.vendor_name ?? '',
-      vendor_phone:       '',
-      vendor_email:       '',
-      actual_amount:      expense.actual_amount != null ? String(expense.actual_amount) : '',
-      refundable_amount:  expense.refundable_amount != null ? String(expense.refundable_amount) : '',
-      notes:              expense.notes ?? '',
-      payment_deadline:   expense.payment_deadline?.slice(0, 10) ?? '',
-    })
+    if (expense) {
+      reset({
+        name:               expense.name,
+        event_id:           expense.event_id,
+        base_currency:      expense.base_currency,
+        actual_amount:      expense.actual_amount != null ? String(expense.actual_amount) : '',
+        refundable_amount:  expense.refundable_amount != null ? String(expense.refundable_amount) : '',
+        notes:              expense.notes ?? '',
+        payment_deadline:   expense.payment_deadline?.slice(0, 10) ?? '',
+      })
+      setCategory({ id: expense.category_id, name: expense.category_name })
+
+      // Look up vendor contact info using the ref (latest cached vendors, no stale closure)
+      const found = expense.vendor_id
+        ? (vendorListRef.current as Vendor[]).find(v => v.id === expense.vendor_id)
+        : null
+      setVendor({
+        id:    expense.vendor_id ?? undefined,
+        name:  found?.name  ?? expense.vendor_name ?? '',
+        phone: found?.phone ?? '',
+        email: found?.email ?? '',
+      })
+    } else {
+      setVendor({ id: undefined, name: '', phone: '', email: '' })
+    }
   }, [expense, reset])
 
   const watchedEventId = watch('event_id')
@@ -125,20 +151,38 @@ export function ExpensePanel({ expense, onClose }: Props) {
 
   const selectedCurrency = watch('base_currency') || fallbackCurrency
 
+  function buildVendorPayload() {
+    if (vendor.id) {
+      // Existing vendor selected from combobox — send id directly, skip findOrCreate
+      return { vendor_id: vendor.id }
+    }
+    if (vendor.name.trim()) {
+      // New name typed — backend will findOrCreate
+      return {
+        vendor_name:  vendor.name.trim(),
+        vendor_phone: vendor.phone || undefined,
+        vendor_email: vendor.email || undefined,
+      }
+    }
+    // Vendor name cleared — explicitly remove vendor if one was previously linked
+    if (isEdit && expense?.vendor_id) {
+      return { vendor_id: null }
+    }
+    return {}
+  }
+
   function onSubmit(data: FormData) {
     const hasAmount = !!data.actual_amount && Number(data.actual_amount) > 0
     const base = {
       name:              data.name,
       event_id:          data.event_id,
       base_currency:     data.base_currency || fallbackCurrency,
-      vendor_name:       data.vendor_name  || undefined,
-      vendor_phone:      data.vendor_phone || undefined,
-      vendor_email:      data.vendor_email || undefined,
       actual_amount:     hasAmount ? Number(data.actual_amount) : undefined,
       refundable_amount: data.refundable_amount ? Number(data.refundable_amount) : undefined,
       notes:             data.notes        || undefined,
       payment_deadline:  data.payment_deadline || undefined,
       is_planned:        !hasAmount,
+      ...buildVendorPayload(),
     }
 
     if (isEdit && expense) {
@@ -263,20 +307,25 @@ export function ExpensePanel({ expense, onClose }: Props) {
         {/* Vendor currency */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
           <label style={labelStyle}>Vendor currency</label>
-          <Controller
-            control={control}
-            name="base_currency"
-            rules={{ required: true }}
-            render={({ field }) => (
-              <AppSelect
-                value={field.value ?? ''}
-                onChange={field.onChange}
-                placeholder="Select currency…"
-                options={currencyOptions}
-              />
-            )}
-          />
-          <span style={{ fontSize: 11, color: '#9B9890' }}>The currency this vendor invoices in — determines when exchange rates are needed</span>
+          <div style={isAmountLocked ? { opacity: 0.5, pointerEvents: 'none' } : undefined}>
+            <Controller
+              control={control}
+              name="base_currency"
+              rules={{ required: true }}
+              render={({ field }) => (
+                <AppSelect
+                  value={field.value ?? ''}
+                  onChange={field.onChange}
+                  placeholder="Select currency…"
+                  options={currencyOptions}
+                />
+              )}
+            />
+          </div>
+          {isAmountLocked
+            ? <span style={{ fontSize: 11, color: '#C09050' }}>Locked — a payment has been recorded</span>
+            : <span style={{ fontSize: 11, color: '#9B9890' }}>The currency this vendor invoices in — determines when exchange rates are needed</span>
+          }
         </div>
 
         {/* Amount | Refundable | Deadline */}
@@ -288,7 +337,8 @@ export function ExpensePanel({ expense, onClose }: Props) {
                 type="number"
                 {...register('actual_amount')}
                 placeholder="0"
-                style={{ ...inputStyle, borderRadius: '7px 0 0 7px', borderRight: 0 }}
+                disabled={isAmountLocked}
+                style={{ ...inputStyle, borderRadius: '7px 0 0 7px', borderRight: 0, opacity: isAmountLocked ? 0.5 : 1 }}
               />
               <div style={{ height: 38, border: '1px solid #E8E6E0', borderLeft: 0, borderRadius: '0 7px 7px 0', padding: '0 10px', fontSize: 12, fontWeight: 600, background: '#F2F1EC', color: '#9B9890', display: 'flex', alignItems: 'center', whiteSpace: 'nowrap', flexShrink: 0 }}>
                 {selectedCurrency}
@@ -322,19 +372,32 @@ export function ExpensePanel({ expense, onClose }: Props) {
           Vendor
         </div>
 
-        {/* Name | Phone | Email */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-            <label style={labelStyle}>Vendor name</label>
-            <input {...register('vendor_name')} placeholder="e.g. Panashe Events" style={inputStyle} />
-          </div>
+        {/* Vendor name combobox */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+          <label style={labelStyle}>Vendor name</label>
+          <VendorCombobox value={vendor} onChange={setVendor} />
+        </div>
+
+        {/* Phone + Email — prefilled when an existing vendor is selected */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
             <label style={labelStyle}>Phone</label>
-            <input {...register('vendor_phone')} placeholder="+1 555 …" style={inputStyle} />
+            <input
+              value={vendor.phone}
+              onChange={e => setVendor(v => ({ ...v, phone: e.target.value }))}
+              placeholder="+1 555 …"
+              style={inputStyle}
+            />
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
             <label style={labelStyle}>Email</label>
-            <input type="email" {...register('vendor_email')} placeholder="vendor@…" style={inputStyle} />
+            <input
+              type="email"
+              value={vendor.email}
+              onChange={e => setVendor(v => ({ ...v, email: e.target.value }))}
+              placeholder="vendor@…"
+              style={inputStyle}
+            />
           </div>
         </div>
 
