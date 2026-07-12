@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
-import { useForm, Controller } from 'react-hook-form'
+import { useForm, Controller, useWatch } from 'react-hook-form'
 import { IconX } from '@tabler/icons-react'
 import { useGetEvents } from '@/store/queries/useEvents'
 import { useBaseCurrency } from '@/store/queries/useBaseCurrency'
@@ -55,25 +55,25 @@ const inputStyle: React.CSSProperties = {
 }
 
 export function ExpensePanel({ expense, onClose }: Props) {
-  const { data: events = [] }      = useGetEvents()
-  const { data: wallets = [] }     = useGetCurrencies()
-  const { data: vendorList = [] }  = useGetVendors()
-  const createExpense               = useCreateExpense()
-  const updateExpense               = useUpdateExpense()
+  const { data: events = [] } = useGetEvents()
+  const { data: wallets = [] } = useGetCurrencies()
+  const { data: vendorList = [] } = useGetVendors()
+  const createExpense = useCreateExpense()
+  const updateExpense = useUpdateExpense()
 
-  const isEdit         = !!expense
-  const isPending      = createExpense.isPending || updateExpense.isPending
+  const isEdit = !!expense
+  const isPending = createExpense.isPending || updateExpense.isPending
   const isAmountLocked = isEdit && Number(expense?.total_paid ?? 0) > 0
   const fallbackCurrency = useBaseCurrency()
 
   const [category, setCategory] = useState<CategoryValue>(() => ({
-    id:   expense?.category_id   ?? undefined,
+    id: expense?.category_id ?? undefined,
     name: expense?.category_name ?? '',
   }))
 
   const [vendor, setVendor] = useState<VendorValue>(() => ({
-    id:    expense?.vendor_id   ?? undefined,
-    name:  expense?.vendor_name ?? '',
+    id: expense?.vendor_id ?? undefined,
+    name: expense?.vendor_name ?? '',
     phone: '',
     email: '',
   }))
@@ -83,29 +83,33 @@ export function ExpensePanel({ expense, onClose }: Props) {
   const vendorListRef = useRef(vendorList)
   vendorListRef.current = vendorList
 
-  const { register, handleSubmit, reset, control, watch, setValue } = useForm<FormData>({
-    defaultValues: expense ? {
-      name:               expense.name,
-      event_id:           expense.event_id,
-      base_currency:      expense.base_currency,
-      actual_amount:      expense.actual_amount != null ? String(expense.actual_amount) : '',
-      refundable_amount:  expense.refundable_amount != null ? String(expense.refundable_amount) : '',
-      notes:              expense.notes ?? '',
-      payment_deadline:   expense.payment_deadline?.slice(0, 10) ?? '',
-    } : undefined,
+  const { register, handleSubmit, reset, control, setValue } = useForm<FormData>({
+    defaultValues: expense
+      ? {
+          name: expense.name,
+          event_id: expense.event_id,
+          base_currency: expense.base_currency,
+          actual_amount: expense.actual_amount != null ? String(expense.actual_amount) : '',
+          refundable_amount:
+            expense.refundable_amount != null ? String(expense.refundable_amount) : '',
+          notes: expense.notes ?? '',
+          payment_deadline: expense.payment_deadline?.slice(0, 10) ?? '',
+        }
+      : undefined,
   })
 
   // Sync form + category + vendor when the expense being edited changes
   useEffect(() => {
     if (expense) {
       reset({
-        name:               expense.name,
-        event_id:           expense.event_id,
-        base_currency:      expense.base_currency,
-        actual_amount:      expense.actual_amount != null ? String(expense.actual_amount) : '',
-        refundable_amount:  expense.refundable_amount != null ? String(expense.refundable_amount) : '',
-        notes:              expense.notes ?? '',
-        payment_deadline:   expense.payment_deadline?.slice(0, 10) ?? '',
+        name: expense.name,
+        event_id: expense.event_id,
+        base_currency: expense.base_currency,
+        actual_amount: expense.actual_amount != null ? String(expense.actual_amount) : '',
+        refundable_amount:
+          expense.refundable_amount != null ? String(expense.refundable_amount) : '',
+        notes: expense.notes ?? '',
+        payment_deadline: expense.payment_deadline?.slice(0, 10) ?? '',
       })
       setCategory({ id: expense.category_id, name: expense.category_name })
 
@@ -114,8 +118,8 @@ export function ExpensePanel({ expense, onClose }: Props) {
         ? (vendorListRef.current as Vendor[]).find(v => v.id === expense.vendor_id)
         : null
       setVendor({
-        id:    expense.vendor_id ?? undefined,
-        name:  found?.name  ?? expense.vendor_name ?? '',
+        id: expense.vendor_id ?? undefined,
+        name: found?.name ?? expense.vendor_name ?? '',
         phone: found?.phone ?? '',
         email: found?.email ?? '',
       })
@@ -124,8 +128,8 @@ export function ExpensePanel({ expense, onClose }: Props) {
     }
   }, [expense, reset])
 
-  const watchedEventId = watch('event_id')
-  const selectedEvent  = useMemo(
+  const watchedEventId = useWatch({ control, name: 'event_id' })
+  const selectedEvent = useMemo(
     () => (events as Event[]).find(e => e.id === watchedEventId) ?? null,
     [events, watchedEventId],
   )
@@ -142,14 +146,17 @@ export function ExpensePanel({ expense, onClose }: Props) {
     const seen = new Set<string>()
     const opts: { value: string; label: string }[] = []
     const add = (code: string) => {
-      if (!seen.has(code)) { seen.add(code); opts.push({ value: code, label: code }) }
+      if (!seen.has(code)) {
+        seen.add(code)
+        opts.push({ value: code, label: code })
+      }
     }
     if (selectedEvent?.vendor_currency) add(selectedEvent.vendor_currency)
     wallets.forEach((w: { currency_code: string }) => add(w.currency_code))
     return opts
   }, [selectedEvent, wallets])
 
-  const selectedCurrency = watch('base_currency') || fallbackCurrency
+  const selectedCurrency = useWatch({ control, name: 'base_currency' }) || fallbackCurrency
 
   function buildVendorPayload() {
     if (vendor.id) {
@@ -159,7 +166,7 @@ export function ExpensePanel({ expense, onClose }: Props) {
     if (vendor.name.trim()) {
       // New name typed — backend will findOrCreate
       return {
-        vendor_name:  vendor.name.trim(),
+        vendor_name: vendor.name.trim(),
         vendor_phone: vendor.phone || undefined,
         vendor_email: vendor.email || undefined,
       }
@@ -174,14 +181,14 @@ export function ExpensePanel({ expense, onClose }: Props) {
   function onSubmit(data: FormData) {
     const hasAmount = !!data.actual_amount && Number(data.actual_amount) > 0
     const base = {
-      name:              data.name,
-      event_id:          data.event_id,
-      base_currency:     data.base_currency || fallbackCurrency,
-      actual_amount:     hasAmount ? Number(data.actual_amount) : undefined,
+      name: data.name,
+      event_id: data.event_id,
+      base_currency: data.base_currency || fallbackCurrency,
+      actual_amount: hasAmount ? Number(data.actual_amount) : undefined,
       refundable_amount: data.refundable_amount ? Number(data.refundable_amount) : undefined,
-      notes:             data.notes        || undefined,
-      payment_deadline:  data.payment_deadline || undefined,
-      is_planned:        !hasAmount,
+      notes: data.notes || undefined,
+      payment_deadline: data.payment_deadline || undefined,
+      is_planned: !hasAmount,
       ...buildVendorPayload(),
     }
 
@@ -194,7 +201,7 @@ export function ExpensePanel({ expense, onClose }: Props) {
       createExpense.mutate(
         {
           ...base,
-          category_id:   category.id || undefined,
+          category_id: category.id || undefined,
           category_name: !category.id ? category.name.trim() || undefined : undefined,
         } as CreateExpenseInput,
         { onSuccess: onClose },
@@ -239,7 +246,8 @@ export function ExpensePanel({ expense, onClose }: Props) {
           type="button"
           onClick={onClose}
           style={{
-            width: 30, height: 30,
+            width: 30,
+            height: 30,
             border: '1px solid #E8E6E0',
             borderRadius: 7,
             background: 'white',
@@ -259,16 +267,27 @@ export function ExpensePanel({ expense, onClose }: Props) {
         onSubmit={handleSubmit(onSubmit)}
         style={{ padding: '20px 28px', display: 'flex', flexDirection: 'column', gap: 14 }}
       >
-
         {/* EXPENSE section */}
-        <div style={{ fontSize: 10, fontWeight: 600, color: '#9B9890', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+        <div
+          style={{
+            fontSize: 10,
+            fontWeight: 600,
+            color: '#9B9890',
+            textTransform: 'uppercase',
+            letterSpacing: '0.07em',
+          }}
+        >
           Expense
         </div>
 
         {/* Name */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
           <label style={labelStyle}>Expense name</label>
-          <input {...register('name', { required: true })} placeholder="e.g. Photographer" style={inputStyle} />
+          <input
+            {...register('name', { required: true })}
+            placeholder="e.g. Photographer"
+            style={inputStyle}
+          />
         </div>
 
         {/* Event + Category */}
@@ -291,16 +310,21 @@ export function ExpensePanel({ expense, onClose }: Props) {
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
             <label style={labelStyle}>Category</label>
-            <CategoryCombobox
-              value={category}
-              onChange={setCategory}
-              allowCreate={!isEdit}
-            />
+            <CategoryCombobox value={category} onChange={setCategory} allowCreate={!isEdit} />
           </div>
         </div>
 
         {/* COST section */}
-        <div style={{ fontSize: 10, fontWeight: 600, color: '#9B9890', textTransform: 'uppercase', letterSpacing: '0.07em', marginTop: 4 }}>
+        <div
+          style={{
+            fontSize: 10,
+            fontWeight: 600,
+            color: '#9B9890',
+            textTransform: 'uppercase',
+            letterSpacing: '0.07em',
+            marginTop: 4,
+          }}
+        >
           Cost
         </div>
 
@@ -322,10 +346,15 @@ export function ExpensePanel({ expense, onClose }: Props) {
               )}
             />
           </div>
-          {isAmountLocked
-            ? <span style={{ fontSize: 11, color: '#C09050' }}>Locked — a payment has been recorded</span>
-            : <span style={{ fontSize: 11, color: '#9B9890' }}>The currency this vendor invoices in — determines when exchange rates are needed</span>
-          }
+          {isAmountLocked ? (
+            <span style={{ fontSize: 11, color: '#C09050' }}>
+              Locked — a payment has been recorded
+            </span>
+          ) : (
+            <span style={{ fontSize: 11, color: '#9B9890' }}>
+              The currency this vendor invoices in — determines when exchange rates are needed
+            </span>
+          )}
         </div>
 
         {/* Amount | Refundable | Deadline */}
@@ -338,9 +367,30 @@ export function ExpensePanel({ expense, onClose }: Props) {
                 {...register('actual_amount')}
                 placeholder="0"
                 disabled={isAmountLocked}
-                style={{ ...inputStyle, borderRadius: '7px 0 0 7px', borderRight: 0, opacity: isAmountLocked ? 0.5 : 1 }}
+                style={{
+                  ...inputStyle,
+                  borderRadius: '7px 0 0 7px',
+                  borderRight: 0,
+                  opacity: isAmountLocked ? 0.5 : 1,
+                }}
               />
-              <div style={{ height: 38, border: '1px solid #E8E6E0', borderLeft: 0, borderRadius: '0 7px 7px 0', padding: '0 10px', fontSize: 12, fontWeight: 600, background: '#F2F1EC', color: '#9B9890', display: 'flex', alignItems: 'center', whiteSpace: 'nowrap', flexShrink: 0 }}>
+              <div
+                style={{
+                  height: 38,
+                  border: '1px solid #E8E6E0',
+                  borderLeft: 0,
+                  borderRadius: '0 7px 7px 0',
+                  padding: '0 10px',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  background: '#F2F1EC',
+                  color: '#9B9890',
+                  display: 'flex',
+                  alignItems: 'center',
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
+                }}
+              >
                 {selectedCurrency}
               </div>
             </div>
@@ -354,11 +404,29 @@ export function ExpensePanel({ expense, onClose }: Props) {
                 placeholder="0"
                 style={{ ...inputStyle, borderRadius: '7px 0 0 7px', borderRight: 0 }}
               />
-              <div style={{ height: 38, border: '1px solid #E8E6E0', borderLeft: 0, borderRadius: '0 7px 7px 0', padding: '0 10px', fontSize: 12, fontWeight: 600, background: '#F2F1EC', color: '#9B9890', display: 'flex', alignItems: 'center', whiteSpace: 'nowrap', flexShrink: 0 }}>
+              <div
+                style={{
+                  height: 38,
+                  border: '1px solid #E8E6E0',
+                  borderLeft: 0,
+                  borderRadius: '0 7px 7px 0',
+                  padding: '0 10px',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  background: '#F2F1EC',
+                  color: '#9B9890',
+                  display: 'flex',
+                  alignItems: 'center',
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
+                }}
+              >
                 {selectedCurrency}
               </div>
             </div>
-            <span style={{ fontSize: 11, color: '#9B9890' }}>Deposit or caution fee you expect back</span>
+            <span style={{ fontSize: 11, color: '#9B9890' }}>
+              Deposit or caution fee you expect back
+            </span>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
             <label style={labelStyle}>Payment deadline</label>
@@ -368,7 +436,16 @@ export function ExpensePanel({ expense, onClose }: Props) {
         </div>
 
         {/* VENDOR section */}
-        <div style={{ fontSize: 10, fontWeight: 600, color: '#9B9890', textTransform: 'uppercase', letterSpacing: '0.07em', marginTop: 4 }}>
+        <div
+          style={{
+            fontSize: 10,
+            fontWeight: 600,
+            color: '#9B9890',
+            textTransform: 'uppercase',
+            letterSpacing: '0.07em',
+            marginTop: 4,
+          }}
+        >
           Vendor
         </div>
 
@@ -408,16 +485,28 @@ export function ExpensePanel({ expense, onClose }: Props) {
         </div>
 
         {/* Footer */}
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', paddingTop: 4, paddingBottom: 8 }}>
+        <div
+          style={{
+            display: 'flex',
+            gap: 8,
+            justifyContent: 'flex-end',
+            paddingTop: 4,
+            paddingBottom: 8,
+          }}
+        >
           <button
             type="button"
             onClick={onClose}
             style={{
-              height: 36, padding: '0 16px',
+              height: 36,
+              padding: '0 16px',
               border: '1px solid #E8E6E0',
-              borderRadius: 7, background: 'white',
-              fontSize: 13, color: '#595650',
-              cursor: 'pointer', fontFamily: 'inherit',
+              borderRadius: 7,
+              background: 'white',
+              fontSize: 13,
+              color: '#595650',
+              cursor: 'pointer',
+              fontFamily: 'inherit',
             }}
           >
             Cancel
@@ -426,18 +515,21 @@ export function ExpensePanel({ expense, onClose }: Props) {
             type="submit"
             disabled={isPending}
             style={{
-              height: 36, padding: '0 18px',
+              height: 36,
+              padding: '0 18px',
               background: isPending ? '#555' : '#1C1B18',
-              color: 'white', border: 'none',
-              borderRadius: 7, fontSize: 13,
-              fontWeight: 500, cursor: isPending ? 'default' : 'pointer',
+              color: 'white',
+              border: 'none',
+              borderRadius: 7,
+              fontSize: 13,
+              fontWeight: 500,
+              cursor: isPending ? 'default' : 'pointer',
               fontFamily: 'inherit',
             }}
           >
             {isPending ? 'Saving…' : isEdit ? 'Save changes' : 'Save expense'}
           </button>
         </div>
-
       </form>
     </div>
   )
